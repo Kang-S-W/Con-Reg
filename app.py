@@ -1,65 +1,125 @@
 import streamlit as st
 import time
+from engine import get_gemini_response
+from database import get_ordinance_data
 
-# 웹사이트 기본 설정
-st.set_page_config(page_title="건축조례 AI 플랫폼", layout="wide")
+# 페이지 설정 (최상단에 한 번만 실행)
+st.set_page_config(page_title="용인시 건축 조례 지원 플랫폼", layout="wide")
 
-# 사이드바 메뉴 구성
-menu = st.sidebar.selectbox("메뉴 선택", ["프로젝트 개요", "데이터베이스 현황", "AI 규제 질의", "민원 연계 시스템"])
+# 디자인 서식 적용
+st.markdown("""
+    <style>
+    .main { background-color: #fcfcfc; }
+    .stTabs [data-baseweb="tab-list"] { gap: 20px; }
+    .stTabs [data-baseweb="tab"] { height: 50px; white-space: pre-wrap; font-size: 16px; }
+    .report-card { padding: 25px; border-radius: 8px; background-color: #ffffff; border: 1px solid #eeeeee; line-height: 1.6; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# 1. 프로젝트 개요 페이지
-if menu == "프로젝트 개요":
-    st.header("AI 기반 건축조례 지원 플랫폼")
-    st.subheader("Al-Based Construction Regulation Support Platform")
-    st.write("본 플랫폼은 건축 실무에서의 법령·조례 해석 비효율성을 해결하기 위한 목적으로 개발되었습니다[cite: 3].")
+# 좌측 사이드바 구성
+with st.sidebar:
+    st.title("플랫폼 제어")
+    st.success("시스템 정상 작동")
+    st.divider()
+    
+    st.subheader("시스템 메뉴")
+    st.button("화면 모드 전환")
+    st.button("플랫폼 가동 현황")
+    st.button("데이터 관리 화면")
+    st.divider()
+    
+    st.subheader("대화 이력")
+    st.caption("건축선 후퇴 거리 문의")
+    st.caption("용인시 일조권 이격 거리")
+    st.divider()
+    st.button("사용자 접속 및 등록")
+
+# 상단 제목
+st.title("건축 조례 및 법령 해석 지원 플랫폼")
+
+# 상단 메뉴 4개 유지
+tab_list = ["1. 프로젝트 개요", "2. 인공지능 분석", "3. 건축 시뮬레이션", "4. 민원 양식 생성"]
+tabs = st.tabs(tab_list)
+
+# 1. 프로젝트 개요
+with tabs[0]:
+    st.header("프로젝트 개요")
     
     col1, col2 = st.columns(2)
     with col1:
-        st.info("**주요 목표**\n1. 조례와 상위법령의 정합적 연결 [cite: 46]\n2. 자연어 질문의 구조화 [cite: 47]\n3. 근거 중심의 답변 생성 [cite: 51]")
+        st.subheader("1. 프로젝트 목적")
+        st.write("건축 실무 현장에서 반복되는 법령 및 조례 해석의 비효율성을 개선하고자 합니다.")
+        st.write("조례를 잘못 해석하여 발생하는 행정 불이익과 경제적 손실을 방지하는 것을 핵심 목표로 합니다.")
+    
     with col2:
-        st.success("**기대 효과**\n- 조례 오인에 따른 경제적 손실 방지 [cite: 182]\n- 반복 민원 대응 부담 완화 [cite: 184]")
+        st.subheader("2. 프로젝트 범위")
+        st.write("지역 범위 : 경기도 용인시를 1차적 대상으로 합니다.")
+        st.write("데이터 범위 : 용인시 조례와 경기도 조례, 그 상위 법령 13개와 차용법규 125개 규정을 통합합니다.")
 
-# 2. 데이터베이스 현황 페이지
-elif menu == "데이터베이스 현황":
-    st.header("법규 데이터베이스 구축 현황")
-    st.write("용인시 및 경기도를 중심으로 총 125개의 법규 데이터가 구조화되어 있습니다.")
-    
-    st.table({
-        "구분": ["조례 (용인/경기)", "위임 상위 법령", "의미 차용 법규"],
-        "개수": ["7개 [cite: 474]", "13개 [cite: 477]", "105개 [cite: 479, 481]"],
-        "주요 항목": ["건축 조례, 도시계획 조례 등", "건축법, 국토계획법 등", "민법, 지방세법 등"]
-    })
-    st.caption("ChromaDB 기반 벡터 데이터베이스로 구축 중입니다[cite: 536, 574].")
+    st.subheader("3. 시스템 운영 체계")
+    st.write("질문 분석부터 근거 추출 및 불확실성 검토까지 이어지는 8단계 공정을 거쳐 답변을 생성합니다.")
 
-# 3. AI 규제 질의 페이지 (핵심 기능)
-elif menu == "AI 규제 질의":
-    st.header("AI 기반 건축 규제 분석")
-    query = st.text_input("질문을 입력하세요 (예: 용인시 일조권 높이 제한은?)")
+# 2. 인공지능 분석
+with tabs[1]:
+    st.header("인공지능 규제 분석")
+    # 탭 내부의 단일 입력창
+    user_query = st.chat_input("분석이 필요한 건축 규제에 대해 입력해 주세요")
     
-    if query:
-        # 기획안의 8단계 분석 프로세스 시연 [cite: 92, 736]
-        with st.status("단계별 법규 분석 수행 중...", expanded=True) as status:
-            st.write("1~2. 질문 분석 및 지역 식별 중... [cite: 634, 636]")
-            time.sleep(1)
-            st.write("3~4. 조례 DB 선택 및 상위법령 매칭 중... [cite: 677, 664]")
-            time.sleep(1)
-            st.write("5~7. 조문 추출 및 불확실성 검토 중... [cite: 673, 666]")
-            time.sleep(1)
+    if user_query:
+        # 8단계 분석 시뮬레이션 상태 표시
+        with st.status("단계별 규제 분석 진행 중", expanded=True) as status:
+            st.write("쟁점 파악 및 대상 지역 식별 진행")
+            time.sleep(0.5)
+            st.write("상위 법령 및 지자체 조례 조문 대조")
+            time.sleep(0.5)
+            st.write("근거 조문 추출 및 답변 초안 구성")
+            time.sleep(0.5)
             status.update(label="분석 완료", state="complete", expanded=False)
-        
-        # 6개 슬롯 표준 응답 스키마 출력 [cite: 131, 653]
-        st.subheader("분석 결과")
-        st.info("**1. 결론:** 높이 10m 이하 부분은 1.5m 이상 이격 필요 (시연용)")
-        st.write("**2. 적용 지역:** 경기도 용인시 [cite: 134]")
-        st.write("**3. 핵심 근거 조문:** 용인시 건축 조례 제36조 [cite: 135]")
-        st.write("**4. 세부 설명:** 정북방향 대지경계선으로부터의 거리 준수 [cite: 136]")
-        st.warning("**5. 추가 확인 항목:** 대상지의 용도지역 및 대지 현황 [cite: 138]")
-        st.write("**6. 담당 기관 및 후속 절차:** 용인시청 건축과 안내 [cite: 139]")
 
-# 4. 민원 연계 시스템 페이지
-elif menu == "민원 연계 시스템":
-    st.header("민원 연계 및 후속 절차")
-    st.write("AI 분석 결과에 따라 관할 기관 문의나 민원 절차로 연결합니다[cite: 33, 57].")
-    
-    st.button("법령해석요청서 초안 자동 생성 [cite: 1636]")
-    st.button("용인시 전자민원 창구 바로가기 [cite: 1630]")
+        # 분석 결과 출력 공간
+        st.markdown('<div class="report-card">', unsafe_allow_html=True)
+        st.subheader("건축 규제 검토 보고서")
+        
+        # 데이터베이스 우선 조회
+        db_info = get_ordinance_data(user_query)
+        
+        if db_info:
+            st.write("**1. 판단 결론**")
+            st.info(db_info['conclusion'])
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                st.write("**2. 적용 지역**")
+                st.write(db_info['region'])
+                st.write("**3. 핵심 근거 조문**")
+                st.write(db_info['law'])
+            with c2:
+                st.write("**4. 해석 설명**")
+                st.write(db_info['detail'])
+                st.write("**6. 후속 절차**")
+                st.write(db_info['next'])
+            st.write("**5. 추가 확인 사항**")
+            st.warning(db_info['check'])
+        else:
+            # 데이터베이스에 결과가 없을 경우 제미나이 실행
+            with st.spinner("제미나이 엔진이 조례를 분석하고 있습니다"):
+                try:
+                    ai_answer = get_gemini_response(user_query)
+                    st.write(ai_answer)
+                except Exception as e:
+                    st.error("AI 엔진 연결에 실패했습니다. API 키 설정을 확인해 주세요.")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# 3. 건축 시뮬레이션 및 4. 민원 양식
+with tabs[2]:
+    st.header("건축선 및 일조권 시각화")
+    st.write("준비 중인 기능입니다.")
+
+with tabs[3]:
+    st.header("행정 민원 지원")
+    st.write("준비 중인 기능입니다.")
+
+# 하단 면책 고지
+st.divider()
+st.caption("본 서비스는 행정기관의 최종 유권해석을 대체하지 않으며, 실제 인허가 신청 전 관할 행정청의 확인이 필요합니다.")
