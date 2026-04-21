@@ -1,41 +1,47 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 import re
 
 def get_gemini_response(user_query):
     try:
-        # 1. API 키 설정
+        # 1. API 키 설정 (Secrets 사용)
         api_key = st.secrets["GEMINI_API_KEY"]
-        genai.configure(api_key=api_key)
+        client = genai.Client(api_key=api_key)
         
-        # 2. 모델 설정 (가장 안정적인 flash 모델 사용)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        
-        # 3. 지침을 프롬프트 내부에 직접 주입 (400 에러 원천 차단)
-        # 승욱 님의 요청사항(영어 금지, 별표/슬래시 금지)을 최우선으로 반영
-        failsafe_prompt = f"""
-        당신은 용인시 건축 조례 전문가입니다. 다음 규칙을 '절대' 준수하여 답변하세요:
+        # 2. 지침과 질문을 하나로 합침 (영어 금지, 별표/슬래시 금지)
+        # 승욱 님의 요청대로 보고서 형식과 금지 규칙을 본문에 직접 주입합니다.
+        combined_prompt = f"""
+        당신은 용인시 건축 조례 전문가입니다. 다음 규칙을 엄격히 지켜서 한국어로만 답변하세요.
 
-        규칙 1: 모든 답변은 한국어로만 작성하세요. 영어 번역을 병기하지 마세요.
-        규칙 2: 답변 전체에서 별표(*)나 슬래시(/) 기호를 절대 사용하지 마세요. 강조는 숫자로만 하세요.
-        규칙 3: [cite]나 인용구 표시를 모두 제거하세요.
-        규칙 4: 질문이 단순 개념이면 일반 설명문으로, 구체적 사례면 아래 6단계 형식을 따르세요.
-        (1. 결론 2. 적용 지역 3. 핵심 근거 조문 4. 세부 설명 5. 추가 확인 항목 6. 담당 기관 및 후속 절차)
+        1. 절대 답변에 영어 번역을 병기하지 마세요. (예: 결론 (Conclusion) -> 금지)
+        2. 답변 전체에서 별표(*)나 슬래시(/) 기호를 절대 사용하지 마세요.
+        3. [cite]나 인용구 표시를 모두 삭제하세요.
+        4. 단순 개념 질문은 일반 설명문으로 작성하세요.
+        5. 사례 해석 질문은 반드시 아래 6개 항목으로 나누어 작성하세요.
+           1. 결론
+           2. 적용 지역
+           3. 핵심 근거 조문
+           4. 세부 설명
+           5. 추가 확인 항목
+           6. 담당 기관 및 후속 절차
 
-        질문 내용: {user_query}
+        사용자 질문: {user_query}
         """
         
-        # 4. 답변 생성
-        response = model.generate_content(failsafe_prompt)
+        # 3. 최신 모델 호출 (v1beta 오류를 피하는 가장 표준적인 경로)
+        response = client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=combined_prompt
+        )
         
         if response and response.text:
-            text = response.text
-            # 인용구 및 잔여 특수 기호 강제 제거
-            clean_text = re.sub(r"\[?cite:\s?\d+\]?", "", text)
+            # 마지막으로 남아있을지 모를 특수 기호 강제 제거
+            clean_text = re.sub(r"\[?cite:\s?\d+\]?", "", response.text)
             clean_text = clean_text.replace("*", "").replace("/", "")
             return clean_text
         else:
-            return "AI 응답 생성 실패: 답변이 비어 있습니다."
+            return "AI가 답변을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요."
 
     except Exception as e:
-        return f"엔진 최종 가동 오류: {str(e)}"
+        # 오류 발생 시 사용자에게 친절하게 표시
+        return f"분석 엔진 가동 중 문제가 발생했습니다: {str(e)}"
