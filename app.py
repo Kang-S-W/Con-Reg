@@ -3,8 +3,10 @@ import time
 from engine import get_gemini_response
 from database import get_ordinance_data
 
+# 페이지 설정
 st.set_page_config(page_title="용인시 건축 조례 지원 플랫폼", layout="wide")
 
+# 디자인 서식
 st.markdown("""
     <style>
     .main { background-color: #fcfcfc; }
@@ -14,6 +16,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# 좌측 사이드바
 with st.sidebar:
     st.title("플랫폼 제어")
     st.success("시스템 정상 작동")
@@ -29,10 +32,14 @@ with st.sidebar:
     st.divider()
     st.button("사용자 접속 및 등록")
 
+# 상단 제목
 st.title("건축 조례 및 법령 해석 지원 플랫폼")
+
+# 상단 메뉴 4개 유지
 tab_list = ["1. 프로젝트 개요", "2. 인공지능 분석", "3. 건축 시뮬레이션", "4. 민원 양식 생성"]
 tabs = st.tabs(tab_list)
 
+# 1. 프로젝트 개요 (기존 텍스트 유지)
 with tabs[0]:
     st.header("프로젝트 개요")
     col1, col2 = st.columns(2)
@@ -47,10 +54,13 @@ with tabs[0]:
     st.subheader("3. 시스템 운영 체계")
     st.write("질문 분석부터 근거 추출 및 불확실성 검토까지 이어지는 8단계 공정을 거쳐 답변을 생성합니다.")
 
+# 2. 인공지능 분석
 with tabs[1]:
     st.header("인공지능 규제 분석")
     user_query = st.chat_input("분석이 필요한 건축 규제에 대해 입력해 주세요")
+    
     if user_query:
+        # 8단계 분석 시뮬레이션
         with st.status("단계별 규제 분석 진행 중", expanded=True) as status:
             st.write("쟁점 파악 및 대상 지역 식별 진행")
             time.sleep(0.5)
@@ -62,7 +72,10 @@ with tabs[1]:
 
         st.markdown('<div class="report-card">', unsafe_allow_html=True)
         st.subheader("건축 규제 검토 보고서")
+        
+        # 1. 데이터베이스 먼저 조회
         db_info = get_ordinance_data(user_query)
+        
         if db_info:
             st.write("1. 판단 결론")
             st.info(db_info['conclusion'])
@@ -80,14 +93,17 @@ with tabs[1]:
             st.write("5. 추가 확인 사항")
             st.warning(db_info['check'])
         else:
-            ai_answer = get_gemini_response(user_query)
-            st.write(ai_answer)
+            # 2. 데이터베이스에 없으면 인공지능이 직접 답변
+            with st.spinner("데이터베이스 외 정보를 분석 중입니다"):
+                ai_answer = get_gemini_response(user_query)
+                st.write(ai_answer)
+                
         st.markdown('</div>', unsafe_allow_html=True)
 
+# 3. 및 4. 탭
 with tabs[2]:
     st.header("건축선 및 일조권 시각화")
     st.write("준비 중인 기능입니다.")
-
 with tabs[3]:
     st.header("행정 민원 지원")
     st.write("준비 중인 기능입니다.")
