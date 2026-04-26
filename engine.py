@@ -6,7 +6,7 @@ import re
 def get_gemini_response(user_query, db_context=""):
     try:
         api_key = st.secrets["GEMINI_API_KEY"]
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={api_key}"
         
         headers = {'Content-Type': 'application/json'}
         
