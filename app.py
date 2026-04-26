@@ -2,30 +2,16 @@ import streamlit as st
 import time
 from datetime import datetime
 
-# ==========================================
-# 임시 가짜(Mock) 함수
-# ==========================================
-def get_ordinance_data(query):
-    if "조례" in query:
-        return {
-            "conclusion": "조건부 허가 대상",
-            "region": "경기도 용인시",
-            # 과거 누락되었던 건축법 제15조 교차 검증 반영
-            "law": "용인시 건축 조례 제1조 제1항 제2호 다목 및 건축법 제15조",
-            "detail": f"입력하신 [{query}]와 관련하여, 용인시 조례 및 상위 법령에 따라 기준을 충족해야 합니다.",
-            "check": "해당 필지의 지구단위계획 포함 여부",
-            "next": "관할 구청 건축과 사전 협의"
-        }
-    return None
+# 우리가 만든 모듈들 임포트
+from engine import get_gemini_response
+from database import get_ordinance_data
+from style import apply_custom_style
+from components import render_user_message, render_ai_report
 
-def get_gemini_response(query):
-    return f"AI 분석 엔진 응답: 입력하신 [{query}]에 대한 일반적인 건축 법령 가이드입니다. 구체적인 사항은 용인시 자치법규 시스템을 교차 검증해야 합니다."
-# ==========================================
-
-# 페이지 설정
+# 1. 페이지 설정 (최상단)
 st.set_page_config(page_title="용인시 건축 조례 지원 플랫폼", layout="wide")
 
-# --- 1. 상태 변수 초기화 ---
+# 2. 상태 변수 초기화
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "selected_index" not in st.session_state:
@@ -33,15 +19,16 @@ if "selected_index" not in st.session_state:
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 
-# --- 2. 좌측 사이드바 및 다크 모드 토글 ---
+# 3. 사이드바 구성
 with st.sidebar:
     st.title("⚙️ 플랫폼 제어")
     
-    # 다크 모드 스위치
+    # 다크 모드 토글
     st.session_state.dark_mode = st.toggle("🌙 다크 모드 켜기", value=st.session_state.dark_mode)
     
     st.divider()
     
+    # 새 분석 시작 버튼
     if st.button("➕ 새 분석 시작", use_container_width=True, type="primary"):
         st.session_state.selected_index = None
         st.rerun()
@@ -49,6 +36,7 @@ with st.sidebar:
     st.divider()
     st.subheader("📁 대화 이력 (클릭 시 열람)")
     
+    # 이력 목록 출력 (최신순)
     if st.session_state.chat_history:
         for i, chat in enumerate(reversed(st.session_state.chat_history)):
             actual_index = len(st.session_state.chat_history) - 1 - i
@@ -67,96 +55,19 @@ with st.sidebar:
         st.session_state.selected_index = None
         st.rerun()
 
-# --- 3. 다크/라이트 모드에 따른 동적 CSS 완벽 적용 ---
-if st.session_state.dark_mode:
-    bg_main = "#0e1117"
-    bg_sidebar = "#262730" 
-    text_main = "#fafafa"
-    card_bg = "#1e1e1e"
-    card_border = "#333333"
-    user_msg_bg = "#1e3a8a" 
-    user_msg_text = "#ffffff"
-    tab_color = "#aaaaaa"
-    btn_bg = "#333333"      # 다크 모드 일반 버튼 배경
-    btn_border = "#555555"  # 다크 모드 일반 버튼 테두리
-else:
-    bg_main = "#ffffff"
-    bg_sidebar = "#f4f6f9" 
-    text_main = "#222222"
-    card_bg = "#ffffff"
-    card_border = "#eaeaea"
-    user_msg_bg = "#e1f5fe" 
-    user_msg_text = "#000000"
-    tab_color = "#555555"
-    btn_bg = "#ffffff"      # 라이트 모드 일반 버튼 배경
-    btn_border = "#cccccc"  # 라이트 모드 일반 버튼 테두리
+# 4. 스타일 적용 (style.py 호출)
+apply_custom_style(st.session_state.dark_mode)
 
-st.markdown(f"""
-    <style>
-    /* 메인 화면 전체 배경 및 글자색 */
-    .stApp {{ background-color: {bg_main}; color: {text_main}; }}
-    html, body, [class*="css"] {{ font-size: 16px !important; line-height: 1.7 !important; color: {text_main}; }}
-    
-    /* 🔥 화면 최상단 헤더(하얀 띠) 색상 동기화 및 투명화 */
-    [data-testid="stHeader"] {{
-        background-color: {bg_main} !important;
-    }}
-    
-    /* 사이드바 배경 및 내부 요소 글자색 강제 적용 */
-    [data-testid="stSidebar"] {{ background-color: {bg_sidebar} !important; }}
-    [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] span, 
-    [data-testid="stSidebar"] h1, 
-    [data-testid="stSidebar"] h2, 
-    [data-testid="stSidebar"] h3, 
-    [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] {{
-        color: {text_main} !important;
-    }}
-    
-    /* 🔥 일반(Secondary) 버튼 다크 모드 색상 동기화 ('전체 기록 삭제' 등) */
-    button[kind="secondary"] {{
-        background-color: {btn_bg} !important;
-        color: {text_main} !important;
-        border: 1px solid {btn_border} !important;
-    }}
-    button[kind="secondary"]:hover {{
-        border-color: #1E88E5 !important;
-        color: #1E88E5 !important;
-    }}
-    
-    /* 상단 탭 디자인 */
-    .stTabs [data-baseweb="tab-list"] {{ gap: 15px; border-bottom: 2px solid {card_border}; }}
-    .stTabs [data-baseweb="tab"] {{ height: 60px; font-size: 18px !important; font-weight: 600; color: {tab_color}; }}
-    .stTabs [aria-selected="true"] {{ color: #1E88E5 !important; }}
-    
-    /* 결과 보고서 및 메시지 카드 디자인 */
-    .report-card {{ 
-        padding: 30px; border-radius: 12px; background-color: {card_bg}; 
-        border: 1px solid {card_border}; color: {text_main};
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-top: 10px; margin-bottom: 20px; 
-    }}
-    .user-msg {{ 
-        background-color: {user_msg_bg}; color: {user_msg_text};
-        padding: 15px; border-radius: 8px; border-left: 5px solid #0288d1; margin-bottom: 10px; font-weight: bold;
-    }}
-    
-    /* 기타 UI 정렬 */
-    .stButton>button {{ text-align: left !important; }}
-    p, h1, h2, h3, h4, h5, h6, li {{ color: {text_main} !important; }}
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- 4. 메인 화면 ---
+# 5. 메인 레이아웃
 st.write("시스템 상태: 🟢 최신 엔진(v1) 가동 중")
 st.title("🏢 건축 조례 및 법령 해석 지원 플랫폼")
 st.markdown("복잡한 건축 법령과 조례를 AI가 분석하여 직관적인 결과로 제공합니다.")
-st.write("") 
 
+# 탭 구성
 tab_list = ["1️⃣ 프로젝트 개요", "2️⃣ 인공지능 분석", "3️⃣ 건축 시뮬레이션", "4️⃣ 민원 양식 생성"]
 tabs = st.tabs(tab_list)
 
-# 탭 1: 개요
+# --- 탭 1: 개요 ---
 with tabs[0]:
     st.write("") 
     col1, col2 = st.columns(2)
@@ -173,78 +84,58 @@ with tabs[0]:
     st.subheader("⚙️ 3. 시스템 운영 체계")
     st.info("질문 분석부터 근거 추출 및 불확실성 검토까지 이어지는 **8단계 공정**을 거쳐 답변을 생성합니다.")
 
-# 탭 2: AI 분석
+# --- 탭 2: AI 분석 ---
 with tabs[1]:
     st.write("") 
 
+    # 과거 기록 열람 모드
     if st.session_state.selected_index is not None:
         idx = st.session_state.selected_index
         selected_chat = st.session_state.chat_history[idx]
         
         st.success(f"📅 과거 분석 기록 열람 중 (조회 일시: {selected_chat['time']})")
+        render_user_message(selected_chat["query"])
+        render_ai_report(selected_chat["response"])
         
-        with st.chat_message("user"):
-            st.markdown(f'<div class="user-msg">질문: {selected_chat["query"]}</div>', unsafe_allow_html=True)
-            
-        with st.chat_message("assistant"):
-            st.markdown('<div class="report-card">', unsafe_allow_html=True)
-            st.markdown(selected_chat["response"])
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            if st.button("닫기 및 새 질문하기", use_container_width=True):
-                st.session_state.selected_index = None
-                st.rerun()
+        if st.button("닫기 및 새 질문하기", use_container_width=True):
+            st.session_state.selected_index = None
+            st.rerun()
 
+    # 새 질문 모드
     else:
-        user_query = st.chat_input("분석이 필요한 건축 규제에 대해 입력해 주세요 (예: 용인시 조례 알려줘)")
+        user_query = st.chat_input("분석이 필요한 건축 규제를 입력해 주세요")
         
         if user_query:
-            with st.chat_message("user"):
-                st.markdown(f'<div class="user-msg">질문: {user_query}</div>', unsafe_allow_html=True)
+            # 1. 사용자 질문 렌더링
+            render_user_message(user_query)
             
-            with st.chat_message("assistant"):
-                with st.status("분석 진행 중...", expanded=True) as status:
-                    st.write("🔍 쟁점 파악 및 데이터 검색 중...")
-                    time.sleep(1) 
-                    db_info = get_ordinance_data(user_query)
-                    
-                    if db_info:
-                        response_text = f"""
-                        ### 📑 검토 보고서
-                        
-                        **1. 판단 결론:** `{db_info['conclusion']}`  
-                        **2. 적용 지역:** {db_info['region']}  
-                        **3. 핵심 근거 조문:** **{db_info['law']}** **4. 해석 설명:** {db_info['detail']}  
-                        
-                        **5. 추가 확인 사항:** > ⚠️ {db_info['check']}  
-                        
-                        **6. 후속 절차:** {db_info['next']}
-                        """
-                    else:
-                        response_text = get_gemini_response(user_query)
-                    
-                    status.update(label="✅ 분석 완료", state="complete")
+            # 2. AI 분석 진행
+            with st.status("분석 진행 중...", expanded=True) as status:
+                st.write("🔍 조례 데이터베이스 및 상위 법령 검색 중...")
+                # 실제 database.py의 검색 로직 실행
+                db_context = get_ordinance_data(user_query)
+                
+                st.write("🤖 AI 엔진이 법리적 해석 및 보고서 작성 중...")
+                # 실제 engine.py의 AI 호출 실행
+                response_text = get_gemini_response(user_query, db_context)
+                
+                status.update(label="✅ 분석 완료", state="complete")
 
-                st.markdown('<div class="report-card">', unsafe_allow_html=True)
-                st.markdown(response_text)
-                st.markdown('</div>', unsafe_allow_html=True)
+            # 3. AI 결과 렌더링
+            render_ai_report(response_text)
 
-            new_record = {
+            # 4. 히스토리 저장 및 갱신
+            st.session_state.chat_history.append({
                 "query": user_query,
                 "response": response_text,
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            }
-            st.session_state.chat_history.append(new_record)
+            })
             st.rerun()
 
-# 탭 3, 4
+# --- 탭 3, 4 ---
 with tabs[2]:
-    st.write("")
     st.warning("🚧 건축선 시각화 기능은 현재 준비 중입니다.")
 with tabs[3]:
-    st.write("")
     st.warning("🚧 행정 민원 지원 기능은 현재 준비 중입니다.")
 
 st.divider()
