@@ -6,14 +6,21 @@ from database import get_ordinance_data
 from style import apply_custom_style
 from components import render_user_message, render_ai_report
 
+# [추가] storage 모듈에서 저장/불러오기 기능 가져오기
+from storage import load_history, save_history 
+
 # 1. 페이지 설정 (최상단)
 st.set_page_config(page_title="용인시 건축 조례 지원 플랫폼", layout="wide")
 
 # 2. 상태 변수 초기화
+# [수정] 빈 리스트가 아닌 load_history()를 통해 파일에서 기록을 안전하게 복구합니다.
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+    st.session_state.chat_history = load_history()
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
+# [추가] 기록 클릭 시 해당 내용만 보여주기 위한 열람 상태 변수
+if "selected_index" not in st.session_state:
+    st.session_state.selected_index = None
 
 # 3. 스타일 적용
 apply_custom_style(st.session_state.dark_mode)
@@ -24,7 +31,14 @@ with st.sidebar:
     st.session_state.dark_mode = st.toggle("🌙 다크 모드", value=st.session_state.dark_mode)
     
     st.divider()
-    st.subheader("📁 대화 이력")
+    
+    # [추가] 열람 중일 때 새 질문 화면으로 돌아가는 버튼
+    if st.button("➕ 새 분석 시작", use_container_width=True, type="primary"):
+        st.session_state.selected_index = None
+        st.rerun()
+        
+    st.divider()
+    st.subheader("📁 대화 이력 (클릭 시 열람)")
     
     # --- 화면 좌측에 기록을 버튼으로 띄워주는 핵심 로직 ---
     if st.session_state.chat_history:
@@ -77,40 +91,58 @@ with tabs[0]:
 with tabs[1]:
     st.write("") 
 
-    # [중요] 기존 대화 내용을 먼저 화면에 뿌려줍니다.
-    for chat in st.session_state.chat_history:
-        render_user_message(chat["query"])
-        render_ai_report(chat["response"])
-
-    # 사용자 입력창
-    user_query = st.chat_input("분석이 필요한 건축 규제를 입력해 주세요")
-    
-    if user_query:
-        # 1. 화면에 사용자 질문 즉시 표시
-        render_user_message(user_query)
+    # [수정] 사이드바에서 기록을 클릭해서 "열람 모드"일 때의 화면 구성
+    if st.session_state.selected_index is not None:
+        idx = st.session_state.selected_index
+        selected_chat = st.session_state.chat_history[idx]
         
-        # 2. 로딩 상태 표시 및 데이터 처리
-        with st.status("분석 진행 중...", expanded=True) as status:
-            st.write("🔍 데이터베이스 탐색 중...")
-            db_context = get_ordinance_data(user_query)
-            
-            st.write("🤖 AI 엔진 보고서 작성 중...")
-            response_text = get_gemini_response(user_query, db_context)
-            
-            status.update(label="✅ 분석 완료", state="complete")
-
-        # 3. 화면에 AI 답변 즉시 표시
-        render_ai_report(response_text)
-
-        # 4. 세션 히스토리에 저장 (이후 새로고침 시에도 유지됨)
-        st.session_state.chat_history.append({
-            "query": user_query,
-            "response": response_text,
-            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        })
+        st.info(f"📅 과거 분석 기록 열람 중 (조회 일시: {selected_chat.get('time', '')})")
+        render_user_message(selected_chat["query"])
+        render_ai_report(selected_chat["response"])
         
-        # 새로고침하여 입력창 비우기 (히스토리는 저장되어 위에서 다시 그려짐)
-        st.rerun()
+        if st.button("닫기 및 새 질문하기"):
+            st.session_state.selected_index = None
+            st.rerun()
+
+    # 열람 모드가 아닐 때 (기본 채팅 화면)
+    else:
+        # 기존 대화 내용을 먼저 화면에 뿌려줍니다.
+        for chat in st.session_state.chat_history:
+            render_user_message(chat["query"])
+            render_ai_report(chat["response"])
+
+        # 사용자 입력창
+        user_query = st.chat_input("분석이 필요한 건축 규제를 입력해 주세요")
+        
+        if user_query:
+            # 1. 화면에 사용자 질문 즉시 표시
+            render_user_message(user_query)
+            
+            # 2. 로딩 상태 표시 및 데이터 처리
+            with st.status("분석 진행 중...", expanded=True) as status:
+                st.write("🔍 데이터베이스 탐색 중...")
+                db_context = get_ordinance_data(user_query)
+                
+                st.write("🤖 AI 엔진 보고서 작성 중...")
+                response_text = get_gemini_response(user_query, db_context)
+                
+                status.update(label="✅ 분석 완료", state="complete")
+
+            # 3. 화면에 AI 답변 즉시 표시
+            render_ai_report(response_text)
+
+            # 4. 세션 히스토리에 저장
+            st.session_state.chat_history.append({
+                "query": user_query,
+                "response": response_text,
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+            
+            # [추가] 기록이 생길 때마다 storage.py를 통해 파일에 즉시 영구 보존
+            save_history(st.session_state.chat_history)
+            
+            # 새로고침하여 입력창 비우기
+            st.rerun()
 
 # --- 탭 3, 4 ---
 with tabs[2]: st.warning("🚧 건축선 시각화 기능 준비 중")
