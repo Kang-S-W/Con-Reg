@@ -22,9 +22,39 @@ apply_custom_style(st.session_state.dark_mode)
 with st.sidebar:
     st.title("⚙️ 플랫폼 제어")
     st.session_state.dark_mode = st.toggle("🌙 다크 모드 켜기", value=st.session_state.dark_mode)
+    
+    st.divider()
+    st.subheader("📁 대화 이력 (클릭 시 열람)")
+    
+    # --- 화면 좌측에 기록을 버튼으로 띄워주는 핵심 로직 ---
+    if st.session_state.chat_history:
+        # 최신 기록이 위로 오도록 뒤집어서(reversed) 출력
+        for i, chat in enumerate(reversed(st.session_state.chat_history)):
+            actual_index = len(st.session_state.chat_history) - 1 - i
+            time_str = chat.get('time', '00:00:00')[11:16]
+            
+            # 질문이 너무 길면 잘라서 요약 표시
+            query_summary = chat['query']
+            if len(query_summary) > 12:
+                query_summary = query_summary[:12] + "..."
+            
+            # 버튼을 클릭하면 해당 인덱스를 selected_index에 저장하고 새로고침
+            if st.button(f"🕒 {time_str} | {query_summary}", key=f"hist_{actual_index}", use_container_width=True):
+                st.session_state.selected_index = actual_index
+                st.rerun()
+    else:
+        st.caption("저장된 분석 기록이 없습니다.")
+    # --------------------------------------------------------
+
     st.divider()
     if st.button("🗑️ 전체 기록 삭제"):
         st.session_state.chat_history = []
+        st.session_state.selected_index = None
+        
+        # storage.py의 파일 삭제 기능 호출
+        from storage import clear_history
+        clear_history() 
+        
         st.rerun()
 
 # 5. 메인 화면
