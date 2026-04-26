@@ -10,7 +10,7 @@ def get_gemini_response(user_query, db_context=""):
         
         headers = {'Content-Type': 'application/json'}
         
-        # DB 내용을 참고하여 답변하도록 프롬프트 강화
+        # [수정 포인트] 질문 성격에 따른 출력 형식 분기 지침 추가
         prompt = f"""
         당신은 용인시 건축 조례 및 법령 전문가입니다. 
         제공된 [참고 법규 데이터]를 최우선 근거로 사용하여 답변하십시오.
@@ -18,13 +18,15 @@ def get_gemini_response(user_query, db_context=""):
         [참고 법규 데이터]:
         {db_context if db_context else "직접적인 조례 데이터를 찾지 못했습니다. 일반적인 건축법령 지식에 기반하되 공식 확인이 필요함을 명시하십시오."}
 
-        규칙:
+        답변 규칙:
         1. 별표(*)와 슬래시(/)는 절대 사용하지 마십시오.
-        2. 조례와 상위 법령(차용법규)의 관계가 있다면 이를 명확히 설명하십시오.
-        3. 반드시 다음 6개 항목으로 보고서를 작성하십시오.
+        2. 질문의 성격에 따라 형식을 달리하십시오:
+           - [사례 해석 및 규제 확인]: 구체적인 대지 조건이나 행위에 대한 질문은 반드시 아래 '6개 항목'을 지키십시오.
+           - [단순 개념 및 용어 정의]: "용적률이 뭐야?"와 같은 단순 질문은 6개 항목을 따르지 말고, 가독성 좋은 일반 설명문 형식으로 답변하십시오.
+        3. 6개 항목 구성 (사례 질문용):
            1. 결론
            2. 적용 지역 및 법적 위계
-           3. 핵심 근거 조문 (DB에 있는 경우 조문 번호 명시)
+           3. 핵심 근거 조문
            4. 세부 해석 및 설명
            5. 추가 확인 사항 및 원문 링크 (제공된 link 활용)
            6. 담당 기관 및 후속 절차
@@ -33,15 +35,17 @@ def get_gemini_response(user_query, db_context=""):
         """
         
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
-        # 대기 시간을 60초로 늘려 타임아웃 방지
+        # 복잡한 추론을 위해 타임아웃 60초 유지
         response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=60)
         
         if response.status_code == 200:
             text = response.json()['candidates'][0]['content']['parts'][0]['text']
-            # 정제 필터
+            # 불필요한 기호 제거 정제
             text = re.sub(r"\[?cite:\s?\d+\]?", "", text)
-            return text.replace("*", "").replace("/", "")
+            text = text.replace("*", "").replace("/", "")
+            return text
         else:
-            return "엔진 응답에 실패했습니다."
+            return "엔진 응답에 실패했습니다. 잠시 후 다시 시도해주세요."
+            
     except Exception as e:
-        return f"통신 장애: {str(e)}"
+        return f"통신 장애 발생: {str(e)}"
