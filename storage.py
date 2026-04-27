@@ -17,3 +17,8 @@ def save_history(history_list):
     """기록을 파일에 즉시 저장합니다."""
     with open(FILE_PATH, "w", encoding="utf-8") as f:
         json.dump(history_list, f, ensure_ascii=False, indent=2)
+
+def clear_history():
+    """저장된 대화 기록 파일을 삭제합니다."""
+    if os.path.exists(FILE_PATH):
+        os.remove(FILE_PATH)
