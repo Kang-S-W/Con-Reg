@@ -15,9 +15,6 @@ if "chat_history" not in st.session_state:
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 
-# 3. 스타일 적용
-apply_custom_style(st.session_state.dark_mode)
-
 # 4. 사이드바 구성
 with st.sidebar:
     st.title("⚙️ 플랫폼 제어")
@@ -56,6 +53,9 @@ with st.sidebar:
         clear_history() 
         
         st.rerun()
+
+# 4. 스타일 적용
+apply_custom_style(st.session_state.dark_mode)
 
 # 5. 메인 화면
 st.write("시스템 상태: 🟢 엔진 정상 가동 중")
