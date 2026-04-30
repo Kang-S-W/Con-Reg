@@ -11,7 +11,7 @@ def render_ai_report(response_text):
     for title in titles:
         response_text = re.sub(
             rf"(?m)^(\s*{re.escape(title)}\s*[:：]?)",
-            r"<strong>\1</strong>",
+            r'<strong class="report-title">\1</strong>',
             response_text
         )
 
