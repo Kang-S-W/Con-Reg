@@ -4,7 +4,6 @@ from datetime import datetime
 import traceback
 import inspect
 
-# [주의] 본인의 모듈들이 같은 폴더에 있어야 합니다.
 from engine import get_gemini_response
 from database import get_ordinance_data
 from style import apply_custom_style
@@ -28,7 +27,9 @@ apply_custom_style(st.session_state.dark_mode)
 # 4. 사이드바 구성
 with st.sidebar:
     st.title("⚙️ 플랫폼 제어")
-    st.session_state.dark_mode = st.toggle("🌙 다크 모드", value=st.session_state.dark_mode)
+    
+    # 🔥 [수정됨] key 속성을 사용해 session_state와 즉시 연동 (두 번 눌러야 하는 버그 해결)
+    st.toggle("🌙 다크 모드", key="dark_mode")
     
     st.divider()
     if st.button("➕ 새 분석 시작", use_container_width=True, type="primary"):
@@ -65,7 +66,6 @@ with st.sidebar:
 st.write("시스템 상태: 🟢 엔진 정상 가동 중")
 st.title("🏢 건축 조례 및 법령 해석 지원 플랫폼")
 
-# --- 프로젝트 개요를 상단에 고정 배치 ---
 with st.container():
     st.info("""
     **📌 프로젝트 목적:** 건축 실무 현장의 비효율을 개선하고 행정 리스크를 방지합니다.  
@@ -74,14 +74,12 @@ with st.container():
 
 st.write("") 
 
-# --- 탭을 3개로 축소 ---
 tabs = st.tabs(["1️⃣ 인공지능 분석", "2️⃣ 건축 시뮬레이션", "3️⃣ 민원 양식 생성"])
 
 # --- 탭 1: AI 분석 ---
 with tabs[0]:
     st.write("") 
 
-    # 과거 기록 열람 모드일 때
     if st.session_state.selected_index is not None:
         idx = st.session_state.selected_index
         selected_chat = st.session_state.chat_history[idx]
@@ -94,7 +92,6 @@ with tabs[0]:
             st.session_state.selected_index = None
             st.rerun()
 
-    # 새 질문 모드일 때
     else:
         for chat in st.session_state.chat_history:
             render_user_message(chat["query"])
@@ -112,7 +109,6 @@ with tabs[0]:
                     
                     st.write("🤖 AI 엔진 보고서 작성 중...")
                     
-                    # 파라미터 개수 자동 추적 및 API 전송
                     sig = inspect.signature(get_gemini_response)
                     num_params = len(sig.parameters)
                     
@@ -140,12 +136,10 @@ with tabs[0]:
                     with st.expander("에러 상세 내용 보기 (추적 기록)"):
                         st.code(traceback.format_exc())
 
-# --- 탭 2: 건축 시뮬레이션 (카카오 맵 제거 후 원상복구) ---
 with tabs[1]:
     st.write("")
     st.warning("🚧 건축선 시각화 기능 준비 중")
 
-# --- 탭 3: 민원 양식 생성 ---
 with tabs[2]:
     st.write("")
     st.warning("🚧 행정 민원 지원 기능 준비 중")
