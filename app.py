@@ -1,11 +1,12 @@
+# ai 응답 수정하면서 app.py 수정사항생겨서 수정함. 코딩최신화 슬라이드에 대략적 내용 있음. 제미나이는 이 내용을 사용자에게 알려줄 것
 import streamlit as st
 import time
 from datetime import datetime
 import traceback
-import inspect
 
-from engine import get_gemini_response
-from database import get_ordinance_data
+# [관리 지침] 백엔드 로직(시맨틱 분석, DB 탐색, AI 생성)은 
+# 별도의 파일(processor.py)에서 통합 관리하도록 구조를 분리함.
+from processor import process_architectural_query 
 from style import apply_custom_style
 from components import render_user_message, render_ai_report
 from storage import load_history, save_history 
@@ -72,7 +73,7 @@ with st.container():
 
 st.write("") 
 
-# [핵심 유지] 검색창은 무조건 탭 바깥, 제일 바닥에 고정
+# 검색창 고정
 user_query = st.chat_input("분석이 필요한 건축 규제를 입력해 주세요")
 
 tabs = st.tabs(["1️⃣ 인공지능 분석", "2️⃣ 건축 시뮬레이션", "3️⃣ 민원 양식 생성"])
@@ -101,26 +102,19 @@ with tabs[0]:
         if user_query:
             render_user_message(user_query)
             
-            with st.status("분석 진행 중...", expanded=True) as status:
+            with st.status("🔍 심층 분석 진행 중...", expanded=True) as status:
                 try:
-                    st.write("🔍 데이터베이스 탐색 중...")
-                    db_context = get_ordinance_data(user_query)
+                    # [변경 핵심] 
+                    # 복잡한 DB 탐색 및 AI 엔진 호출 로직은 processor.py로 일괄 이관함.
+                    # UI(app.py)는 분석 결과(response_text)만 받아 처리하도록 단순화.
+                    st.write("🛰️ 법률 시맨틱 레이어 및 통합 엔진 가동 중...")
                     
-                    st.write("🤖 AI 엔진 보고서 작성 중...")
-                    
-                    sig = inspect.signature(get_gemini_response)
-                    num_params = len(sig.parameters)
-                    
-                    if num_params == 1:
-                        combined_prompt = f"질문: {user_query}\n\n참고법령: {db_context}" if db_context else user_query
-                        response_text = get_gemini_response(combined_prompt)
-                    else:
-                        response_text = get_gemini_response(user_query, db_context)
+                    response_text = process_architectural_query(user_query)
                     
                     status.update(label="✅ 분석 완료", state="complete")
-
                     render_ai_report(response_text)
                     
+                    # 기록 저장
                     st.session_state.chat_history.append({
                         "query": user_query,
                         "response": response_text,
@@ -131,16 +125,15 @@ with tabs[0]:
 
                 except Exception as e:
                     status.update(label="❌ 시스템 에러 발생", state="error")
-                    st.error(f"코드 내부에서 에러가 발생했습니다: {str(e)}")
-                    with st.expander("에러 상세 내용 보기 (추적 기록)"):
+                    st.error(f"시스템 처리 중 오류가 발생했습니다: {str(e)}")
+                    with st.expander("에러 상세 내용 보기"):
                         st.code(traceback.format_exc())
 
-# --- 탭 2: 건축 시뮬레이션 ---
+# --- 탭 2/3 로직 유지 ---
 with tabs[1]:
     st.write("")
     st.warning("🚧 건축선 시각화 기능 준비 중")
 
-# --- 탭 3: 민원 양식 생성 ---
 with tabs[2]:
     st.write("")
     st.warning("🚧 행정 민원 지원 기능 준비 중")
