@@ -7,13 +7,14 @@ import time
 def get_semantic_keywords(user_query):
     """
     [Step 1] 시맨틱 레이어: 질문을 분석하여 법률적 단서(태그)를 도출합니다.
-    데이터베이스 검색 전, AI가 '어떤 법령을 찾아야 할지' 전략을 짜는 단계입니다.
+    사용자의 질문을 데이터베이스 검색에 최적화된 전문 용어로 번역하는 전략가 역할을 합니다.
     """
     MODEL_NAME = "gemini-2.5-flash"
     api_key = st.secrets["GEMINI_API_KEY"]
     url = f"https://generativelanguage.googleapis.com/v1/models/{MODEL_NAME}:generateContent?key={api_key}"
     headers = {'Content-Type': 'application/json'}
     
+    # AI가 질문의 의도를 파악해 검색 전략을 수립하게 하는 프롬프트
     analysis_prompt = f"""
     질문: '{user_query}'
     위 질문을 분석하여 대한민국 법규 데이터베이스에서 정보를 찾기 위한 핵심 검색어 5개를 뽑아주세요.
@@ -31,12 +32,13 @@ def get_semantic_keywords(user_query):
             tags = result['candidates'][0]['content']['parts'][0]['text']
             return tags.strip()
     except Exception:
-        return "" # 분석 실패 시 빈 문자열을 반환하여 기본 검색으로 진행
+        # 시맨틱 분석 실패 시에도 시스템 중단을 방지하기 위해 빈 값을 반환하여 기본 검색으로 유도
+        return "" 
     return ""
 
 def get_gemini_response(user_query, db_status, db_context, semantic_tags=""):
     """
-    [Step 2] 최종 답변 생성: DB의 충실도(status)에 따라 지능적으로 대응합니다.
+    [Step 2] 최종 답변 생성: DB의 충실도(db_status)에 따라 지능적으로 일반 지식을 결합합니다.
     """
     MODEL_NAME = "gemini-2.5-flash" 
     
@@ -45,7 +47,8 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags=""):
         url = f"https://generativelanguage.googleapis.com/v1/models/{MODEL_NAME}:generateContent?key={api_key}"
         headers = {'Content-Type': 'application/json'}
         
-        # [데이터 충실도에 따른 동적 지침 설정]
+        # [데이터 충실도에 따른 동적 지침 설정] 
+        # 밀도 점수가 낮을 경우(INCOMPLETE) 일반 지식 사용 고지 문구를 강제함
         if db_status in ["INCOMPLETE", "NO_DATA"]:
             status_instruction = """
             [경고: 데이터 충실도 부족]
@@ -77,7 +80,7 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags=""):
         
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
         
-        # [안정성] 자동 재시도 및 오류 처리 로직
+        # [안정성 보강] 기존의 견고한 5회 자동 재시도 및 오류 처리 로직 유지
         max_retries = 5 
         for i in range(max_retries):
             try:
@@ -86,11 +89,13 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags=""):
                 if response.status_code == 200:
                     result = response.json()
                     text = result['candidates'][0]['content']['parts'][0]['text']
-                    # 특수 태그 및 금지 기호 정제
+                    
+                    # [데이터 정제] 불필요한 인용 태그 및 금지 기호(*) 제거
                     text = re.sub(r"\[?cite:\s?\d+\]?", "", text)
                     text = text.replace("*", "").replace("/", "")
                     return text
                 
+                # 과부하 또는 속도 제한 발생 시 점진적 대기 후 재시도
                 if response.status_code == 429: # Rate Limit
                     time.sleep(2)
                     continue
