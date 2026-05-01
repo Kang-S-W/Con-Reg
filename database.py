@@ -5,7 +5,9 @@ import streamlit as st
 
 @st.cache_data
 def load_all_databases():
-    """합의된 4개의 CSV 파일을 로드합니다."""
+    """
+    합의된 4개의 CSV 파일을 로드합니다.
+    """
     def safe_read_csv(file_path):
         encodings = ['utf-8-sig', 'cp949', 'utf-8', 'euc-kr']
         for enc in encodings:
@@ -27,22 +29,16 @@ def load_all_databases():
 def extract_smart_snip(text, query, intent_type="detail"):
     """
     조문 단위(제N조)로 텍스트를 절삭합니다.
-    - intent_type="overview": 제1조(목적)부터 도입부 추출
-    - intent_type="detail": 키워드가 포함된 해당 조항 추출
     """
     if not text: return ""
     
-    # 조문 시작 패턴 (예: 제1조(목적))
     pattern = r"제\d+조(?:의\d+)?\s*\(.*?\)"
     articles = list(re.finditer(pattern, text))
     
     if intent_type == "overview" or not articles:
-        # 개요 질문이면 문서 시작부터 약 3개 조항 또는 2000자 반환
         end_idx = articles[3].start() if len(articles) > 3 else len(text)
         return text[:end_idx].strip()
 
-    # 상세 질문: 키워드가 등장하는 가장 적절한 조항 탐색
-    # 불용어를 제외한 핵심 단어 추출
     keywords = [kw for kw in query.split() if len(kw) > 1 and kw not in ["뭐야", "어떻게", "알려줘"]]
     hit_pos = -1
     for kw in keywords:
@@ -51,9 +47,8 @@ def extract_smart_snip(text, query, intent_type="detail"):
             hit_pos = pos
             break
     
-    if hit_pos == -1: return text[:1500] # 키워드 못 찾으면 상단 반환
+    if hit_pos == -1: return text[:1500]
 
-    # 키워드가 포함된 조항의 시작과 끝 찾기
     start_pos = 0
     end_pos = len(text)
     for i, art in enumerate(articles):
@@ -66,66 +61,106 @@ def extract_smart_snip(text, query, intent_type="detail"):
             
     return text[start_pos:end_pos].strip()
 
-def get_ordinance_data(query):
+def get_ordinance_data(query, semantic_tags=""):
+    """
+    [지능형 탐색 엔진]
+    1. 시맨틱 태그를 검색어에 통합하여 의미론적 검색 수행
+    2. 데이터 밀도 점수(Satisfaction Score)를 계산하여 탐색 깊이 결정
+    3. 탐색 결과의 충실도 상태(Status)를 함께 반환
+    """
     dbs = load_all_databases()
-    if not dbs: return "데이터베이스 파일을 찾을 수 없습니다."
+    if not dbs: return "NO_DB", "데이터베이스 파일을 찾을 수 없습니다."
 
-    # 1. 질문 의도 파악 (단순 키워드 라우팅)
+    # 1. 키워드 통합 및 정제
+    tags_list = [t.strip() for t in semantic_tags.split(',') if t.strip()]
+    combined_keywords = list(set(query.split() + tags_list))
+    # 불용어 및 짧은 단어 필터링
+    combined_keywords = [kw for kw in combined_keywords if len(kw) > 1 and kw not in ["뭐야", "시기", "방법"]]
+
+    # 2. 질문 의도 판별
     overview_keywords = ["뭐야", "목적", "정의", "취지", "설명", "개요"]
     intent = "overview" if any(kw in query for kw in overview_keywords) else "detail"
 
-    # 2. 핵심 6대 법령 정의
-    tier1_names = ["용인시 건축 조례", "용인시 도시계획 조례"]
-    tier2_names = ["건축법", "건축법 시행령", "국토의 계획 및 이용에 관한 법률", "국토의 계획 및 이용에 관한 법률 시행령"]
-
     final_context = []
     processed_sources = set()
+    
+    # 3. 데이터 밀도 제어 설정
+    total_density_score = 0
+    SATISFACTION_THRESHOLD = 20  # 목표 점수 20점
 
-    def search_in_df(df, name_col, content_col, target_names=None, region=None):
-        """특정 조건에 맞는 행을 찾아 결과에 추가"""
-        mask = pd.Series(True, index=df.index)
-        if target_names:
-            mask &= df[name_col].isin(target_names)
-        if region:
-            mask &= (df['region (지자체)'].str.contains(region) if 'region (지자체)' in df.columns else False)
+    def calculate_row_score(name, content):
+        """조문의 정보 가치를 점수화합니다."""
+        score = 0
+        for kw in combined_keywords:
+            if kw in name: score += 10 # 법령 명칭(제목) 매칭 시 고점 부여
+            if kw in content: score += 2 # 본문 매칭 시 가산점
+        return score
+
+    # 4. 정정된 5단계 폭포수 탐색 체계
+    tier_configs = [
+        {"label": "조례 핵심", "file": "ordinance_basic.csv", "targets": ["용인시 건축 조례", "용인시 도시계획 조례"]},
+        {"label": "위임법령 핵심", "file": "statute.csv", "targets": ["건축법", "건축법 시행령", "국토의 계획 및 이용에 관한 법률", "국토의 계획 및 이용에 관한 법률 시행령"]},
+        {"label": "조례 일반", "file": "ordinance_basic.csv", "region": "용인"},
+        {"label": "위임법령", "file": "statute.csv", "all": True},
+        {"label": "연관 법리", "file": ["ord_borrowed.csv", "stat_borrowed.csv"], "all": True}
+    ]
+
+    for tier in tier_configs:
+        # 데이터 만족도 체크: 임계치 도달 시 탐색 중단 (무한 루프 및 과부하 방지)
+        if total_density_score >= SATISFACTION_THRESHOLD:
+            break
         
-        res = df[mask]
-        for _, row in res.iterrows():
-            source_id = f"{row[name_col]}"
-            if source_id in processed_sources: continue
+        target_files = [tier["file"]] if isinstance(tier["file"], str) else tier["file"]
+        
+        for f_name in target_files:
+            if f_name not in dbs: continue
+            df = dbs[f_name]
+            # 파일별 컬럼명 대응
+            name_col = "ordinance (조례명)" if "ordinance" in f_name else "Ordinance(법규명)"
+            content_col = "content" if "content" in df.columns else "Content(원문)"
             
-            # 본문 내 키워드 존재 확인 (상세 질문일 경우)
-            content = row[content_col]
-            if intent == "detail" and not any(kw in content for kw in query.split() if len(kw) > 1):
-                continue
+            # 필터링 로직 (핵심 법령 지정 또는 지자체 필터링)
+            if "targets" in tier:
+                target_df = df[df[name_col].isin(tier["targets"])]
+            elif "region" in tier:
+                target_df = df[df['region (지자체)'].str.contains(tier["region"], na=False) if 'region (지자체)' in df.columns else df.index == -1]
+            else:
+                target_df = df
+            
+            # 검색 및 점수 누적
+            for _, row in target_df.iterrows():
+                row_name = str(row[name_col])
+                if row_name in processed_sources: continue
+                
+                row_content = str(row[content_col])
+                # 제목이나 본문에 키워드가 포함된 경우만 처리
+                if any(kw in row_name or kw in row_content for kw in combined_keywords):
+                    score = calculate_row_score(row_name, row_content)
+                    
+                    if score > 0:
+                        snip = extract_smart_snip(row_content, query, intent)
+                        final_context.append(f"### [{tier['label']}] {row_name}\n{snip}")
+                        processed_sources.add(row_name)
+                        total_density_score += score
+                        
+                        # 티어 내 탐색 중 점수가 충족되면 즉시 중단
+                        if total_density_score >= SATISFACTION_THRESHOLD:
+                            break
+            if total_density_score >= SATISFACTION_THRESHOLD:
+                break
 
-            snip = extract_smart_snip(content, query, intent)
-            final_context.append(f"### [근거 법규] {row[name_col]}\n{snip}")
-            processed_sources.add(source_id)
-            if len(final_context) >= 3: return True
-        return False
+    # 5. 결과 반환 및 상태 결정
+    if not final_context:
+        return "NO_DATA", "데이터베이스에서 관련 조문을 찾을 수 없습니다."
 
-    # 3. 5단계 폭포수 탐색 실행
-    # Tier 1: 용인 핵심 2종 (ordinance_basic.csv)
-    if "ordinance_basic.csv" in dbs:
-        search_in_df(dbs["ordinance_basic.csv"], "ordinance (조례명)", "content", target_names=tier1_names)
+    combined_context = "\n\n---\n\n".join(final_context)
+    
+    # 누적 점수가 임계치에 미달하면 INCOMPLETE 상태 반환
+    if total_density_score < SATISFACTION_THRESHOLD:
+        status = "INCOMPLETE"
+        # AI가 인지할 수 있도록 컨텍스트 상단에 안내 삽입
+        combined_context = f"[시스템 알림: 데이터 밀도 점수({total_density_score})가 부족함]\n{combined_context}"
+    else:
+        status = "COMPLETE"
 
-    # Tier 2: 국가 핵심 4종 (statute.csv)
-    if len(final_context) < 3 and "statute.csv" in dbs:
-        search_in_df(dbs["statute.csv"], "Ordinance(법규명)", "Content(원문)", target_names=tier2_names)
-
-    # Tier 3: 용인 일반 조례 (ordinance_basic.csv 중 region='용인시')
-    if len(final_context) < 3 and "ordinance_basic.csv" in dbs:
-        search_in_df(dbs["ordinance_basic.csv"], "ordinance (조례명)", "content", region="용인")
-
-    # Tier 4: 경기도 및 국가 일반 (statute.csv)
-    if len(final_context) < 3 and "statute.csv" in dbs:
-        search_in_df(dbs["statute.csv"], "Ordinance(법규명)", "Content(원문)")
-
-    # Tier 5: 차용 법리 (borrowed 파일들)
-    if len(final_context) < 2:
-        for f in ["ord_borrowed.csv", "stat_borrowed.csv"]:
-            if f in dbs:
-                search_in_df(dbs[f], "Ordinance(법규명)", "Content(원문)")
-
-    return "\n\n---\n\n".join(final_context) if final_context else "관련된 법령 조항을 찾을 수 없습니다."
+    return status, combined_context
