@@ -62,7 +62,6 @@ with st.sidebar:
         st.rerun()
 
 # 5. 메인 화면
-st.write("시스템 상태: 🟢 엔진 정상 가동 중")
 st.title("🏢 건축 조례 및 법령 해석 지원 플랫폼")
 
 with st.container():
