@@ -1,4 +1,3 @@
-# engine.py
 import streamlit as st
 import requests
 import json
@@ -6,7 +5,7 @@ import re
 import time
 
 def get_semantic_keywords(user_query):
-    """[Step 1] 내부 검색 전략 수립을 위한 시맨틱 추출"""
+    """[Step 1] 질문의 법률적 의도 분석"""
     MODEL_NAME = "gemini-2.5-flash"
     api_key = st.secrets["GEMINI_API_KEY"]
     url = f"https://generativelanguage.googleapis.com/v1/models/{MODEL_NAME}:generateContent?key={api_key}"
@@ -20,61 +19,55 @@ def get_semantic_keywords(user_query):
 
 def get_gemini_response(user_query, db_status, db_context, semantic_tags=""):
     """
-    [Step 2] 최종 답변 생성:
-    - 시스템 분류 라벨([위임법령 핵심] 등) 노출 전면 차단
-    - 민원인 중심의 정갈한 법률 보고서 형식 유지
+    [Step 2] 최종 답변 생성: 
+    시스템 내부 사정(DB 구성 등)을 절대 언급하지 않는 '투명한 전문가' 모드입니다.
     """
     MODEL_NAME = "gemini-2.5-flash" 
     api_key = st.secrets["GEMINI_API_KEY"]
     url = f"https://generativelanguage.googleapis.com/v1/models/{MODEL_NAME}:generateContent?key={api_key}"
     headers = {'Content-Type': 'application/json'}
     
+    # 데이터 충실도에 따른 보완 문구 결정
+    fallback_header = ""
     if db_status in ["INCOMPLETE", "NO_DATA"]:
-        status_instruction = """
-        [데이터 보완 지침]
-        제공된 데이터베이스에 직접적인 정보가 부족한 상태입니다.
-        1. '### 세부 해석' 섹션의 첫 문장을 반드시 "현재 데이터베이스만으로는 정보 제공이 완료될 수 없어 일반 지식을 사용하여 답변합니다."로 시작하십시오.
-        2. 위 폴백(Fallback) 문구 고지 후에는 당신의 지식을 바탕으로 질문에 대한 명확한 해답을 상세히 기술하십시오.
-        """
-    else:
-        status_instruction = "제공된 데이터베이스 내용을 최우선 근거로 사용하여 답변하십시오."
+        fallback_header = "현재 데이터베이스만으로는 정보 제공이 완료될 수 없어 일반 지식을 사용하여 답변합니다."
 
     prompt = f"""
-    민원인의 질문에 대해 아래 3개 항목으로 구성된 보고서를 작성하십시오.
+    당신은 대한민국 행정 전문가입니다. 아래 지침을 엄격히 준수하여 보고서를 작성하십시오.
 
-    {status_instruction}
+    [절대 금지 사항]
+    - "제공된 데이터베이스에는 ~가 있다/없다"라는 말을 절대 하지 마십시오.
+    - 시스템 내부 자료의 범위를 설명하거나 한계를 요약하는 문단을 만들지 마십시오.
+    - [참조 데이터]와 같은 기술 용어를 본문에 노출하지 마십시오.
 
-    [참조용 데이터베이스]: {db_context}
-    [참조용 키워드]: {semantic_tags}
+    [작성 가이드]
+    1. ### 결론, ### 핵심 근거, ### 세부 해석 3개 항목만 사용하십시오.
+    2. '세부 해석'의 첫 문장은 반드시 다음과 같이 시작하십시오: {fallback_header if fallback_header else "확인된 법규 데이터를 바탕으로 상세 해석을 제공합니다."}
+    3. 당신이 보유한 모든 지식을 동원하여 실무적인 해답을 제공하십시오.
+    4. 별표(*)와 슬래시(/)를 사용하지 마십시오.
 
-    작성 및 금지 규칙 (위반 시 시스템 오류 발생):
-    1. 도입부 인사말이나 자기소개를 절대 하지 마십시오. 바로 ### 결론 항목으로 시작합니다.
-    2. 다음 3개 항목만 사용하십시오: ### 결론, ### 핵심 근거, ### 세부 해석.
-    3. **절대 금지**: [위임법령 핵심], [조례 핵심], [참조용 데이터베이스] 등 대괄호로 둘러싸인 시스템 분류 명칭을 본문에 절대 노출하지 마십시오.
-    4. ### 핵심 근거 작성 시 법령의 명칭(예: 건축물관리법)만 나열하십시오.
-    5. '### 세부 해석'에서는 일반 지식을 활용해 실질적인 정보와 해답을 상세히 기술하십시오.
-    6. 별표(*)와 슬래시(/) 사용을 절대 금지합니다.
-
+    [참조 데이터]: {db_context}
     질문: {user_query}
     """
     
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
     
+    # [안정성] 5회 재시도 로직 포함
     for i in range(5):
         try:
             res = requests.post(url, headers=headers, data=json.dumps(payload), timeout=100)
             if res.status_code == 200:
                 text = res.json()['candidates'][0]['content']['parts'][0]['text']
-                
-                # [강력한 정제 로직] 
-                # 1. 인용 태그 제거
-                text = re.sub(r"\[?cite:\s?\d+\]?", "", text)
-                # 2. 대괄호로 둘러싸인 모든 시스템 라벨([위임법령 핵심] 등) 강제 제거
+                # [정제] 대괄호 태그 및 불필요한 메타 설명 제거
                 text = re.sub(r"\[.*?\]", "", text)
-                # 3. 금지 기호 제거
                 text = text.replace("*", "").replace("/", "")
+                
+                # AI가 습관적으로 뱉는 메타 문구 강제 삭제
+                meta_trash = ["제공된 데이터베이스", "법령 자료는", "포함하고 있지 않습니다", "확인할 수 없습니다"]
+                for trash in meta_trash:
+                    text = text.replace(trash, "")
                 
                 return text.strip()
             time.sleep(2)
         except: continue
-    return "시스템 응답에 실패했습니다. 잠시 후 다시 시도해 주세요."
+    return "시스템 엔진 응답 실패. 잠시 후 다시 시도해 주세요."
