@@ -25,14 +25,13 @@ def render_ai_report(response_text):
     formatted_text = safe_text.replace("\n", "<br>")
     copy_text = json.dumps(response_text, ensure_ascii=False)
 
-    html_block = f"""
-    <div class="report-wrapper">
-        <button class="copy-btn"
-            onclick='navigator.clipboard.writeText({copy_text})'
-            title="답변 복사">📋 복사TEST</button>
+    html_block = (
+        f'<div class="report-wrapper">'
+        f'<button class="copy-btn" '
+        f'onclick=\'navigator.clipboard.writeText({copy_text})\' '
+        f'title="답변 복사">📋 복사TEST</button>'
+        f'<div class="report-card">{formatted_text}</div>'
+        f'</div>'
+    )
 
-        <div class="report-card">{formatted_text}</div>
-    </div>
-    """
-
-    st.markdown(textwrap.dedent(html_block).strip(), unsafe_allow_html=True)
+    st.markdown(html_block, unsafe_allow_html=True)
