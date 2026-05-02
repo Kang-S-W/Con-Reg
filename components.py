@@ -15,8 +15,8 @@ def render_ai_report(response_text):
 
     # 소제목 뒤에 내용이 바로 붙어 있으면 강제로 다음 줄로 내림
     pattern = r"(?m)^\s*(?:#+\s*)?(" + "|".join(map(re.escape, titles)) + r")\s*[:：]?\s*(?=\S)"
-    response_text = re.sub(pattern, r"\n\n\1\n", response_text).strip()
-
+    response_text = re.sub(r"\n{3,}", "\n\n", response_text)
+    
     # 예전처럼 줄바꿈 유지 + 소제목만 굵게
     formatted_text = response_text
 
