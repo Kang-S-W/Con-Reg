@@ -373,10 +373,12 @@ elif st.session_state.current_page == "sitemap":
     import pandas as pd
     import numpy as np
 
+    # [오류 해결!] 컬럼 이름의 중복을 피하기 위해 띄어쓰기 개수를 다르게 적용합니다.
     def make_grid_df(items, cols=3):
         padded_items = items + [""] * ((cols - len(items) % cols) % cols)
         grid = np.array(padded_items).reshape(-1, cols)
-        return pd.DataFrame(grid, columns=[""] * cols)
+        unique_columns = [" " * (i + 1) for i in range(cols)]
+        return pd.DataFrame(grid, columns=unique_columns)
 
     with st.expander("📚 취급 법규 목록 (조례 및 상위 법령)", expanded=True):
         st.write("플랫폼이 분석 가능한 전체 법규 목록입니다. 탭을 클릭하여 종류별로 확인하세요.")
