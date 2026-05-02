@@ -373,11 +373,9 @@ elif st.session_state.current_page == "sitemap":
     import pandas as pd
     import numpy as np
 
-    # 리스트를 N개의 열(Column)로 변환해주는 헬퍼 함수
     def make_grid_df(items, cols=3):
         padded_items = items + [""] * ((cols - len(items) % cols) % cols)
         grid = np.array(padded_items).reshape(-1, cols)
-        # 테이블 헤더를 깔끔하게 빈칸 처리
         return pd.DataFrame(grid, columns=[""] * cols)
 
     with st.expander("📚 취급 법규 목록 (조례 및 상위 법령)", expanded=True):
@@ -424,7 +422,6 @@ elif st.session_state.current_page == "sitemap":
                 "용인시 각종 위원회 설치 및 운영 조례", "용인시 건축 조례", "용인시 도시계획 조례", "자연공원법", 
                 "전통사찰의 보존 및 지원에 관한 법률", "주택법", "한옥 등 건축자산의 진흥에 관한 법률"
             ]
-            # 3개의 열을 가진 데이터프레임으로 깔끔하게 렌더링
             st.dataframe(make_grid_df(sub_laws_1, 3), hide_index=True, use_container_width=True)
 
         with l_tabs[3]:
@@ -444,7 +441,4 @@ elif st.session_state.current_page == "sitemap":
                 "집합건물의 소유 및 관리에 관한 법률", "택지개발촉진법", "토지이용규제 기본법", "하수도법", "하천법", 
                 "한국토지주택공사법", "행정대집행법"
             ]
-            # 3개의 열을 가진 데이터프레임으로 깔끔하게 렌더링
             st.dataframe(make_grid_df(sub_laws_2, 3), hide_index=True, use_container_width=True)
-                if i % 2 == 0: c1.write(f"• {sl}")
-                else: c2.write(f"• {sl}")
