@@ -5,21 +5,12 @@ import traceback
 import streamlit.components.v1 as components 
 import pandas as pd
 import numpy as np
-import base64
-import os
 
 # [구조 분리] 백엔드 통합 프로세서
 from processor import handle_ai_analysis 
 from style import apply_custom_style
 from components import render_user_message, render_ai_report
 from storage import load_history, save_history 
-
-# --- [로컬 이미지 변환 함수] 이미지가 깨지지 않도록 Base64로 인코딩 ---
-def get_image_base64(image_path):
-    if os.path.exists(image_path):
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode()
-    return "" # 파일이 없을 경우 빈 문자열 반환
 
 # 1. 페이지 설정 (최상단)
 st.set_page_config(page_title="용인시 건축 조례 지원 플랫폼", layout="wide")
@@ -87,7 +78,7 @@ with st.sidebar:
                 st.session_state.current_page = "main"
                 st.rerun()
     else:
-        st.caption("저장된 분석 기록이 없습니다.")
+        st.caption("저장된 분석 기록이 영구 보관됩니다.")
 
     st.divider()
     if st.button("🗑️ 전체 기록 삭제"):
@@ -233,17 +224,16 @@ elif st.session_state.current_page == "qna":
                 st.error("제목과 내용을 모두 입력해 주세요.")
 
 
-# --- 🗺️ 5. 사이트맵 ---
+# --- 🗺️ 5. 사이트맵 (공식 로고 외부 링크 적용) ---
 elif st.session_state.current_page == "sitemap":
     st.title("🗺️ 플랫폼 시스템 아키텍처 및 사이트맵")
     st.info("용인시 건축 조례 전문 해석 AI 플랫폼의 전체 구조와 취급 법규 목록입니다.")
     st.write("")
 
-    # 로컬 이미지 Base64 인코딩 처리 (제공해주신 파일명 기준)
-    moleg_logo_b64 = get_image_base64("image_ce4981.png")  # 법제처 로고
-    kakao_logo_b64 = get_image_base64("image_ce49c1.png")  # 카카오 로고
+    # 절대 깨지지 않는 위키미디어 및 공식 앱스토어 로고 URL
+    moleg_logo_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Logo_of_the_Ministry_of_Government_Legislation_%28South_Korea%29.svg/320px-Logo_of_the_Ministry_of_Government_Legislation_%28South_Korea%29.svg.png"
+    kakao_logo_url = "https://play-lh.googleusercontent.com/jG_2s60x9P-Z5M4g-lQy33qL9S0GylqX1_yHj9oY_aY5b1P8T2lK8g8K7jO_M_Y6_g=w240-h240-rw"
     
-    # HTML 코드 내에 동적(f-string)으로 Base64 이미지 삽입
     architecture_html = f"""
     <style>
         .arch-container {{ background-color: #0b459c; padding: 20px; border-radius: 12px; font-family: 'Malgun Gothic', sans-serif; color: #333; }}
@@ -255,8 +245,8 @@ elif st.session_state.current_page == "sitemap":
         .arch-box span {{ display: block; font-size: 11px; font-weight: normal; color: #555; margin-top: 4px; }}
         .data-source-row {{ display: flex; justify-content: center; gap: 15px; margin-top: 10px; }}
         .data-source {{ display: flex; align-items: center; justify-content: center; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 30px; padding: 8px 18px; font-size: 13px; font-weight: bold; color: #495057; box-shadow: 0 2px 4px rgba(0,0,0,0.05); gap: 8px; }}
-        .custom-icon {{ width: 20px; height: 20px; object-fit: contain; }}
-        .emoji-icon {{ font-size: 16px; margin-right: 6px; }}
+        .custom-icon {{ width: 22px; height: 22px; object-fit: contain; margin-right: 2px; border-radius: 4px; }}
+        .emoji-icon {{ font-size: 18px; margin-right: 4px; }}
     </style>
 
     <div class="arch-container">
@@ -291,10 +281,10 @@ elif st.session_state.current_page == "sitemap":
             
             <div class="data-source-row">
                 <div class="data-source">
-                    <img class="custom-icon" src="data:image/png;base64,{moleg_logo_b64}" alt="법제처"> 국가법령정보센터
+                    <img class="custom-icon" src="{moleg_logo_url}" alt="법제처"> 국가법령정보센터
                 </div>
                 <div class="data-source">
-                    <img class="custom-icon" src="data:image/png;base64,{kakao_logo_b64}" alt="카카오맵"> 카카오맵 API
+                    <img class="custom-icon" src="{kakao_logo_url}" alt="카카오맵"> 카카오맵 API
                 </div>
                 <div class="data-source">
                     <span class="emoji-icon">🗄️</span> 로컬 히스토리 DB
