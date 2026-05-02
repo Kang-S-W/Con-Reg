@@ -13,16 +13,21 @@ def render_user_message(query):
 def render_ai_report(response_text):
     titles = ["결론", "적용 지역", "핵심 근거", "세부 해석", "원문 링크", "담당 기관"]
 
-    safe_text = html.escape(response_text)
+    # 소제목 뒤에 내용이 바로 붙어 있으면 강제로 다음 줄로 내림
+    pattern = r"(?m)^\s*(?:#+\s*)?(" + "|".join(map(re.escape, titles)) + r")\s*[:：]?\s*(?=\S)"
+    response_text = re.sub(pattern, r"\n\n\1\n", response_text).strip()
+
+    # 예전처럼 줄바꿈 유지 + 소제목만 굵게
+    formatted_text = response_text
 
     for title in titles:
-        safe_text = re.sub(
-            rf"(?m)^\s*(?:#+\s*)?{re.escape(title)}\s*[:：]?(?=\s|$)",
-            f'<strong class="report-title">{title}</strong>',
-            safe_text
+        formatted_text = re.sub(
+            rf"(?m)^(\s*{re.escape(title)}\s*)$",
+            r'<strong class="report-title">\1</strong>',
+            formatted_text
         )
 
-    formatted_text = safe_text.replace("\n", "<br>")
+    formatted_text = formatted_text.replace("\n", "<br>")
     copy_text = json.dumps(response_text, ensure_ascii=False)
 
     html_block = (
