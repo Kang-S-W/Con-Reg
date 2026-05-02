@@ -299,86 +299,28 @@ elif st.session_state.current_page == "qna":
         elif admin_pw:
             st.error("비밀번호가 일치하지 않습니다.")
 
-# --- 사이트맵 화면 (시스템 아키텍처 시각화) ---
+# --- 사이트맵 화면 (시스템 구조도 및 법규 목록) ---
 elif st.session_state.current_page == "sitemap":
     st.title("🗺️ 플랫폼 시스템 아키텍처 및 사이트맵")
-    st.info("현재 구축된 용인시 건축 조례 지원 플랫폼의 전체 시스템 구조도입니다.")
+    st.info("용인시 건축 조례 전문 해석 AI 플랫폼의 전체 구조와 취급 법규 목록입니다.")
     st.write("")
 
-    # (이전과 동일한 HTML/CSS 코드 유지)
+    # 1~3번 요청사항 반영된 HTML 구조도
     architecture_html = """
     <style>
-        .arch-container {
-            background-color: #0b459c;
-            padding: 20px;
-            border-radius: 12px;
-            font-family: 'Malgun Gothic', sans-serif;
-            color: #333;
-        }
-        .arch-title {
-            text-align: center;
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-        .arch-layer {
-            background-color: white;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .layer-title {
-            text-align: center;
-            font-weight: bold;
-            color: #0b459c;
-            margin-bottom: 10px;
-            font-size: 18px;
-            border-bottom: 2px solid #f0f2f6;
-            padding-bottom: 5px;
-        }
-        .box-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-        }
-        .arch-box {
-            flex: 1;
-            background-color: #e6f0fa;
-            border: 1px solid #c1d5ea;
-            border-radius: 6px;
-            padding: 12px;
-            text-align: center;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        .arch-box span {
-            display: block;
-            font-size: 12px;
-            font-weight: normal;
-            color: #555;
-            margin-top: 4px;
-        }
-        .data-source-row {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 10px;
-        }
-        .data-source {
-            background-color: #f8f9fa;
-            border: 1px dashed #adb5bd;
-            border-radius: 30px;
-            padding: 8px 20px;
-            font-size: 13px;
-            font-weight: bold;
-            color: #495057;
-        }
+        .arch-container { background-color: #0b459c; padding: 20px; border-radius: 12px; font-family: 'Malgun Gothic', sans-serif; color: #333; }
+        .arch-title { text-align: center; color: white; font-size: 22px; font-weight: bold; margin-bottom: 20px; }
+        .arch-layer { background-color: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .layer-title { text-align: center; font-weight: bold; color: #0b459c; margin-bottom: 10px; font-size: 17px; border-bottom: 2px solid #f0f2f6; padding-bottom: 5px; }
+        .box-row { display: flex; justify-content: space-between; gap: 10px; }
+        .arch-box { flex: 1; background-color: #e6f0fa; border: 1px solid #c1d5ea; border-radius: 6px; padding: 12px; text-align: center; font-size: 13px; font-weight: 600; }
+        .arch-box span { display: block; font-size: 11px; font-weight: normal; color: #555; margin-top: 4px; }
+        .data-source-row { display: flex; justify-content: center; gap: 15px; margin-top: 10px; }
+        .data-source { background-color: #f8f9fa; border: 1px dashed #adb5bd; border-radius: 30px; padding: 6px 15px; font-size: 12px; font-weight: bold; color: #495057; }
     </style>
 
     <div class="arch-container">
-        <div class="arch-title">건축 법령해석 코파일럿 시스템 구조도</div>
+        <div class="arch-title">용인시 건축 조례 전문 해석 AI 플랫폼 사이트맵</div>
         
         <div class="arch-layer">
             <div class="layer-title">대국민 / 실무자 서비스 (UI)</div>
@@ -394,19 +336,18 @@ elif st.session_state.current_page == "sitemap":
             <div class="layer-title">AI 및 백엔드 통합 엔진 (Legal Module)</div>
             <div class="box-row">
                 <div class="arch-box">LLM 분석 엔진<span>(handle_ai_analysis)</span></div>
-                <div class="arch-box">법률 시맨틱 레이어<span>(규제 조항 필터링 및 매핑)</span></div>
-                <div class="arch-box">세션 상태 관리자<span>(대화 이력 및 Q&A 상태 저장)</span></div>
+                <div class="arch-box">법률 레이어링<span>(규제 조항 필터링 및 매핑)</span></div>
+                <div class="arch-box">세션 관리자<span>(대화 이력 및 Q&A 상태 저장)</span></div>
             </div>
         </div>
 
         <div class="arch-layer">
             <div class="layer-title">외부 시스템 연계 및 DB 구축</div>
             <div class="box-row">
-                <div class="arch-box">용인시/경기도 자치법규<span>(지역 조례 데이터)</span></div>
-                <div class="arch-box">상위 건축 법령 125개<span>(국가 법령 데이터)</span></div>
+                <div class="arch-box">용인시/경기도 자치법규<span>(지역 조례 7개 데이터)</span></div>
+                <div class="arch-box">상위 건축 법령 118개<span>(국가 법령 데이터)</span></div>
                 <div class="arch-box">공간 정보 API 연동<span>(지도 및 주소 데이터)</span></div>
             </div>
-            
             <div class="data-source-row">
                 <div class="data-source">⬆️ 국가법령정보센터</div>
                 <div class="data-source">⬆️ 카카오맵 API</div>
@@ -415,16 +356,57 @@ elif st.session_state.current_page == "sitemap":
         </div>
     </div>
     """
-    
-    # 🚨 [수정된 부분] st.markdown 대신 components.html을 사용하여 렌더링 오류를 차단합니다.
-    components.html(architecture_html, height=550, scrolling=False)
-    
+    components.html(architecture_html, height=520)
+
     st.divider()
-    
-    # 각 블록에 대한 간단한 텍스트 부연 설명 추가
-    with st.expander("👉 각 계층(Layer) 상세 설명 보기"):
-        st.markdown("""
-        * **서비스 레이어 (UI):** 사용자가 직접 마주하는 화면입니다. 사이드바의 버튼이나 상단의 탭을 통해 이동할 수 있는 실제 기능들입니다.
-        * **코어 엔진 레이어:** 사용자의 질문을 분석하고, 법령 데이터와 매칭하여 답변을 생성하는 백엔드 프로세서입니다.
-        * **데이터 및 외부 연계:** AI가 답변을 생성할 때 참고하는 125개의 법령 데이터 베이스와, 지도를 시각화하기 위해 외부에서 끌어오는 카카오 API 등을 의미합니다.
-        """)
+
+    # 4번 요청사항 반영: 취급 법규 목록 (깔끔한 디자인의 테이블)
+    with st.expander("📚 취급 법규 목록 (조례 및 상위 법령)", expanded=True):
+        st.write("플랫폼이 분석 가능한 전체 법규 목록입니다. 탭을 클릭하여 종류별로 확인하세요.")
+        
+        l_tabs = st.tabs(["🏛️ 자치단체 조례", "📜 상위 법령", "🔗 조례 위임 법규", "📂 상위법 위임 법규"])
+
+        with l_tabs[0]:
+            st.markdown("### 🏛️ 경기도 및 용인시 조례")
+            data_ordinance = [
+                ["경기도", "경기도 건축 조례", "건축법"],
+                ["경기도", "경기도 건축기본조례", "건축기본법"],
+                ["경기도", "경기도 건축물 미술작품 설치 및 관리에 관한 조례", "문화예술진흥법"],
+                ["경기도", "경기도 건축물관리 조례", "건축물관리법"],
+                ["용인시", "용인시 건축 조례", "건축법"],
+                ["용인시", "용인시 건축물관리 조례", "건축물관리법"],
+                ["용인시", "용인시 도시계획 조례", "국토의 계획 및 이용에 관한 법률"]
+            ]
+            import pandas as pd
+            df_ord = pd.DataFrame(data_ordinance, columns=["지자체명", "조례명", "위임 법률"])
+            st.table(df_ord)
+
+        with l_tabs[1]:
+            st.markdown("### 📜 주요 상위 법령 (15개 핵심 법률)")
+            laws = [
+                "건축법 / 시행령 / 시행규칙", "건축기본법 / 시행령", "문화예술진흥법 / 시행령",
+                "건축물관리법 / 시행령 / 시행규칙", "국토의 계획 및 이용에 관한 법률 / 시행령 / 시행규칙"
+            ]
+            for law in laws:
+                st.write(f"- {law}")
+
+        with l_tabs[2]:
+            st.markdown("### 🔗 조례에서 위임된 하위 법규")
+            sub_laws_1 = [
+                "공동주택관리법", "경관법 시행령", "도시 및 주거환경정비법", "전통시장법 시행령",
+                "녹색건축물 조성 지원법", "주택법 시행령", "한옥 등 건축자산의 보존에 관한 법률"
+            ]
+            st.info(", ".join(sub_laws_1))
+            st.caption("※ 외 다수의 조례 위임 법규 포함")
+
+        with l_tabs[3]:
+            st.markdown("### 📂 상위법 위임 및 연계 법규 (대표 목록)")
+            sub_laws_2 = [
+                "주차장법", "소방시설법", "전기통신사업법", "수도법", "하수도법", "고압가스 안전관리법",
+                "장애인/노인/임산부 등의 편의증진 보장에 관한 법률", "다중이용업소의 안전관리에 관한 특별법"
+            ]
+            # 컬럼으로 나누어 깔끔하게 표시
+            c1, c2 = st.columns(2)
+            for i, sl in enumerate(sub_laws_2):
+                if i % 2 == 0: c1.write(f"• {sl}")
+                else: c2.write(f"• {sl}")
