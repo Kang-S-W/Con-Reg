@@ -12,6 +12,7 @@ def render_user_message(query):
 
 def render_ai_report(response_text):
     titles = ["결론", "적용 지역", "핵심 근거", "세부 해석", "원문 링크", "담당 기관"]
+    response_text = re.sub(r"(?m)^\s*#{1,6}\s*", "", response_text)
 
     # 소제목 뒤에 내용이 바로 붙어 있으면 강제로 다음 줄로 내림
     pattern = r"(?m)^\s*(?:#+\s*)?(" + "|".join(map(re.escape, titles)) + r")\s*[:：]?\s*(?=\S)"
