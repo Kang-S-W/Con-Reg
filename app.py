@@ -29,6 +29,11 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = load_history()
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
+if "dark_mode_toggle" not in st.session_state:
+    st.session_state.dark_mode_toggle = st.session_state.dark_mode
+def sync_dark_mode():
+    """토글 버튼 값을 실제 다크모드 상태에 저장합니다."""
+    st.session_state.dark_mode = st.session_state.dark_mode_toggle
 if "selected_index" not in st.session_state:
     st.session_state.selected_index = None
 if "current_page" not in st.session_state:
@@ -115,8 +120,11 @@ with st.sidebar:
         st.session_state.current_page = "sitemap"
         st.rerun()
 
-    st.divider()
-    st.toggle("🌙 다크 모드", key="dark_mode")
+    st.toggle(
+    "🌙 다크 모드",
+    key="dark_mode_toggle",
+    on_change=sync_dark_mode
+)
     
     st.divider()
     if st.button("➕ 새 대화 시작", use_container_width=True, type="primary"):
