@@ -29,7 +29,7 @@ def extract_smart_snip(text, query, semantic_tags=""):
 
     keywords = [kw for kw in set(query.split() + semantic_tags.split(',')) if len(kw) > 1]
     # '목적', '정의' 보다는 구체적 실무 단어에 가중치
-    priority_kws = [k for k in keywords if k not in ["법", "조례", "목적", "정의", "건축"]]
+    priority_kws = [k for k in keywords if k not in ["법", "조례", "목적", "정의"]]
 
     scored_articles = []
     for art in articles:
