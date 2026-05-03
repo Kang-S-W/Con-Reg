@@ -166,7 +166,6 @@ with st.sidebar:
 
 # --- 🏠 1. 메인화면 (소개 + 챗봇 단독) ---
 if st.session_state.current_page == "main":
-    st.write("시스템 상태: 🟢 엔진 정상 가동 중")
     st.title("🏢 건축 조례 및 법령 해석 지원 플랫폼")
 
     with st.container():
