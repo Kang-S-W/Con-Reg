@@ -24,14 +24,46 @@ def handle_ai_analysis(user_query):
         semantic_tags=semantic_tags
     )
     
-    # 4. 세션 상태 업데이트 및 데이터 저장 (app.py 대신 여기서 처리)
-    new_chat = {
+    # 4. 대화방 방식으로 저장
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # chat_history가 없으면 빈 리스트 생성
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+    
+    # selected_index가 없으면 None으로 생성
+    if "selected_index" not in st.session_state:
+        st.session_state.selected_index = None
+    
+    # 새 대화가 필요한 경우
+    if st.session_state.selected_index is None or len(st.session_state.chat_history) == 0:
+        new_chat = {
+            "title": user_query[:20] + ("..." if len(user_query) > 20 else ""),
+            "created_at": now,
+            "updated_at": now,
+            "messages": []
+        }
+    
+        st.session_state.chat_history.append(new_chat)
+        st.session_state.selected_index = len(st.session_state.chat_history) - 1
+    
+    # 현재 대화방 찾기
+    current_chat = st.session_state.chat_history[st.session_state.selected_index]
+    
+    # 혹시 messages가 없으면 생성
+    if "messages" not in current_chat:
+        current_chat["messages"] = []
+    
+    # 현재 대화방 안에 질문/답변 추가
+    current_chat["messages"].append({
         "query": user_query,
         "response": response_text,
-        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
+        "time": now
+    })
     
-    st.session_state.chat_history.append(new_chat)
+    current_chat["updated_at"] = now
+    
+    # 저장
     save_history(st.session_state.chat_history)
     
     return response_text
