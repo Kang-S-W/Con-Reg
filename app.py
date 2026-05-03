@@ -205,6 +205,10 @@ if st.session_state.current_page == "main":
                 try:
                     st.write("🛰️ 법률 시맨틱 레이어 및 통합 엔진 가동 중...")
                     response_text = handle_ai_analysis(user_query)
+                    
+                    if st.session_state.chat_history:
+                        st.session_state.selected_index = len(st.session_state.chat_history) - 1
+                    
                     status.update(label="✅ 분석 완료", state="complete")
                     render_ai_report(response_text)
                 except Exception as e:
