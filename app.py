@@ -187,9 +187,11 @@ if st.session_state.current_page == "main":
         if st.session_state.selected_index is not None:
             idx = st.session_state.selected_index
             selected_chat = st.session_state.chat_history[idx]
-            st.success(f"📅 과거 분석 기록 열람 중 (조회 일시: {selected_chat.get('time', '')})")
-            render_user_message(selected_chat["query"])
-            render_ai_report(selected_chat["response"])
+            st.success(f"📅 대화방 열람 중: {selected_chat.get('title', '새 대화')}")
+            
+            for msg in selected_chat.get("messages", []):
+                render_user_message(msg.get("query", ""))
+                render_ai_report(msg.get("response", ""))
             
             if st.button("닫기 및 새 질문하기", use_container_width=True):
                 st.session_state.selected_index = None
