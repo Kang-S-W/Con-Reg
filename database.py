@@ -59,7 +59,7 @@ def get_ordinance_data(query, semantic_tags=""):
     ]
 
     for tier in tier_configs:
-        # 일반 조례 탐색 중 점수가 찼다면 넘어가지만, '위임법령'과 '차용법규'는 무조건 수행
+        # 핵심 조례 탐색 중 점수가 찼다면 넘어가지만, '위임법령'과 '차용법규'는 무조건 수행
         if total_density_score >= SATISFACTION_THRESHOLD and tier['label'] == "조례 핵심":
             continue
             
