@@ -221,9 +221,284 @@ if st.session_state.current_page == "main":
 
 # --- 📝 2. 민원 양식 생성 ---
 elif st.session_state.current_page == "doc_gen":
-    st.title("📝 민원 양식 생성")
-    st.write("")
-    st.warning("🚧 행정 민원 지원 기능 준비 중")
+
+    from processor import generate_civil_document
+    from docx import Document
+    import io
+
+    st.title("📝 건축 행정 민원 양식 생성")
+
+    st.info("""
+    건축 관련 민원을 입력하면:
+
+    ✔️ AI 기반 민원서 자동 생성
+    ✔️ 관련 법령 자동 분석
+    ✔️ 필요 서류 안내
+    ✔️ 용인시 접수 방법 안내
+    ✔️ 민원 조회 방법 제공
+
+    기능을 제공합니다.
+    """)
+
+    st.divider()
+
+    # ==========================================
+    # 1. 민원 유형 선택
+    # ==========================================
+
+    civil_type = st.selectbox(
+        "📌 민원 유형 선택",
+        [
+            "건축허가 관련",
+            "건축선 문의",
+            "일조권 민원",
+            "불법건축물 신고",
+            "용도변경 문의",
+            "주차장 기준 문의",
+            "건축물 해석 문의",
+            "기타"
+        ]
+    )
+
+    # ==========================================
+    # 2. 주소 입력
+    # ==========================================
+
+    site_address = st.text_input(
+        "📍 대상 건축물 주소",
+        placeholder="예: 경기도 용인시 처인구 ..."
+    )
+
+    # ==========================================
+    # 3. 민원 내용 입력
+    # ==========================================
+
+    civil_content = st.text_area(
+        "✏️ 민원 내용을 상세히 입력해주세요",
+        height=250,
+        placeholder="예: 인접 대지 건축물로 인해 일조권 침해가 발생하고 있습니다..."
+    )
+
+    st.divider()
+
+    # ==========================================
+    # 4. 민원 생성 버튼
+    # ==========================================
+
+    if st.button("📄 AI 민원 양식 생성", use_container_width=True):
+
+        if not site_address or not civil_content:
+            st.error("주소와 민원 내용을 모두 입력해주세요.")
+
+        else:
+
+            with st.status("🔍 민원서 생성 및 법령 분석 중...", expanded=True) as status:
+
+                try:
+
+                    st.write("🛰️ 건축 법령 및 조례 분석 중...")
+
+                    result = generate_civil_document(
+                        civil_type,
+                        site_address,
+                        civil_content
+                    )
+
+                    status.update(
+                        label="✅ 민원서 생성 완료",
+                        state="complete"
+                    )
+
+                    st.success("민원서 생성이 완료되었습니다.")
+
+                    # ==========================================
+                    # 생성 결과 출력
+                    # ==========================================
+
+                    st.subheader("📄 생성된 민원서")
+                    st.markdown(result)
+
+                    st.divider()
+
+                    # ==========================================
+                    # 필요 서류 안내
+                    # ==========================================
+
+                    required_docs = {
+                        "건축허가 관련": [
+                            "건축허가 신청서",
+                            "배치도",
+                            "평면도",
+                            "토지이용계획확인서",
+                            "건축계획서"
+                        ],
+
+                        "건축선 문의": [
+                            "대지 위치도",
+                            "토지이용계획확인서",
+                            "현장 사진"
+                        ],
+
+                        "일조권 민원": [
+                            "현장 사진",
+                            "건축물 배치도",
+                            "피해 설명 자료"
+                        ],
+
+                        "불법건축물 신고": [
+                            "현장 사진",
+                            "위치도",
+                            "불법사항 설명자료"
+                        ],
+
+                        "용도변경 문의": [
+                            "건축물대장",
+                            "평면도",
+                            "용도변경 계획서"
+                        ],
+
+                        "주차장 기준 문의": [
+                            "배치도",
+                            "주차계획도",
+                            "건축 개요"
+                        ]
+                    }
+
+                    st.subheader("📎 민원 접수 시 필요 서류")
+
+                    docs = required_docs.get(civil_type, ["신분증", "민원 설명자료"])
+
+                    for doc in docs:
+                        st.write(f"✔️ {doc}")
+
+                    st.divider()
+
+                    # ==========================================
+                    # 담당 부서 자동 안내
+                    # ==========================================
+
+                    department_map = {
+                        "건축허가 관련": "건축허가과",
+                        "건축선 문의": "건축과",
+                        "일조권 민원": "건축과",
+                        "불법건축물 신고": "건축과",
+                        "용도변경 문의": "건축허가과",
+                        "주차장 기준 문의": "교통정책과",
+                        "건축물 해석 문의": "건축과"
+                    }
+
+                    dept = department_map.get(civil_type, "민원여권과")
+
+                    st.subheader("🏢 예상 담당 부서")
+                    st.info(f"📌 추천 담당 부서: {dept}")
+
+                    st.divider()
+
+                    # ==========================================
+                    # 민원 접수 방법
+                    # ==========================================
+
+                    st.subheader("🏛️ 용인시 민원 접수 방법")
+
+                    st.markdown("""
+                    ### ✅ 온라인 접수
+
+                    - 정부24
+                    - 국민신문고
+                    - 용인시청 홈페이지
+
+                    ### ✅ 방문 접수
+
+                    - 용인시청 건축과
+                    - 각 구청 건축허가과
+
+                    ### ✅ 전화 문의
+
+                    - 용인시 콜센터: 1577-1122
+                    """)
+
+                    col1, col2, col3 = st.columns(3)
+
+                    with col1:
+                        st.link_button(
+                            "🔗 정부24",
+                            "https://www.gov.kr"
+                        )
+
+                    with col2:
+                        st.link_button(
+                            "🔗 국민신문고",
+                            "https://www.epeople.go.kr"
+                        )
+
+                    with col3:
+                        st.link_button(
+                            "🔗 용인시청",
+                            "https://www.yongin.go.kr"
+                        )
+
+                    st.divider()
+
+                    # ==========================================
+                    # 민원 조회 방법
+                    # ==========================================
+
+                    st.subheader("🔍 민원 처리 상태 조회")
+
+                    st.success("""
+                    접수 후 아래 사이트에서 처리 현황을 확인할 수 있습니다.
+
+                    ✔️ 정부24 → 나의 민원
+                    ✔️ 국민신문고 → 민원 조회
+                    ✔️ 용인시청 → 민원 처리 현황
+                    """)
+
+                    st.link_button(
+                        "📌 국민신문고 민원조회 바로가기",
+                        "https://www.epeople.go.kr"
+                    )
+
+                    st.divider()
+
+                    # ==========================================
+                    # DOCX 다운로드 기능
+                    # ==========================================
+
+                    st.subheader("📥 민원서 다운로드")
+
+                    doc = Document()
+
+                    doc.add_heading('건축 행정 민원서', level=1)
+
+                    doc.add_paragraph(f"민원 유형: {civil_type}")
+                    doc.add_paragraph(f"대상 주소: {site_address}")
+
+                    doc.add_heading('민원 내용', level=2)
+                    doc.add_paragraph(result)
+
+                    buffer = io.BytesIO()
+                    doc.save(buffer)
+                    buffer.seek(0)
+
+                    st.download_button(
+                        label="📄 DOCX 민원서 다운로드",
+                        data=buffer,
+                        file_name="용인시_건축민원서.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        use_container_width=True
+                    )
+
+                except Exception as e:
+
+                    status.update(
+                        label="❌ 민원 생성 실패",
+                        state="error"
+                    )
+
+                    st.error(f"오류 발생: {str(e)}")
+
+                    with st.expander("상세 오류"):
+                        st.code(traceback.format_exc())
 
 
 # --- 🗺️ 3. 대지 위치 시각화 (독립된 지도 페이지) ---
