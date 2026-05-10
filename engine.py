@@ -3,6 +3,7 @@ import requests
 import json
 import re
 import time
+from database import load_law_links
 
 def get_semantic_keywords(user_query):
     """[Step 1] 질문의 법률적 의도 분석"""
@@ -16,6 +17,27 @@ def get_semantic_keywords(user_query):
         response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=10)
         return response.json()['candidates'][0]['content']['parts'][0]['text'].strip() if response.status_code == 200 else ""
     except: return ""
+
+def apply_law_links(text):
+    """답변 내용 중 법규명이 포함되어 있으면 하단에 링크 섹션을 추가합니다."""
+    link_db = load_law_links()
+    if not link_db:
+        return text
+    
+    found_links = []
+    # 이름이 긴 법령부터 찾아야 '건축법 시행령'이 '건축법'으로 잘못 매칭되지 않습니다.
+    sorted_law_names = sorted(link_db.keys(), key=len, reverse=True)
+    
+    for law_name in sorted_law_names:
+        if law_name in text:
+            link_entry = f"- [{law_name}]({link_db[law_name]})"
+            if link_entry not in found_links:
+                found_links.append(link_entry)
+    
+    if found_links:
+        link_section = "\n\n---\n\n### 🔗 관련 법령 원문 링크\n" + "\n".join(found_links)
+        return text + link_section
+    return text
 
 def get_gemini_response(user_query, db_status, db_context, semantic_tags=""):
     """
@@ -67,7 +89,9 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags=""):
                 for trash in meta_trash:
                     text = text.replace(trash, "")
                 
-                return text.strip()
+                # 기존: return text.strip()
+                processed_text = text.strip()
+                return apply_law_links(processed_text)
             time.sleep(2)
         except: continue
     return "시스템 엔진 응답 실패. 잠시 후 다시 시도해 주세요."
