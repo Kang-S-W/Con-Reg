@@ -35,6 +35,14 @@ def render_ai_report(response_text):
     # 3. 화면 표시용 HTML
     formatted_text = html.escape(response_text)
 
+    # --- [★ 핵심 추가 코드: 마크다운 링크를 HTML 링크로 변환] ---
+    # [이름](링크) 형식을 찾아 <a href="링크">이름</a> 태그로 바꿉니다.
+    formatted_text = re.sub(
+        r"\[(.*?)\]\((.*?)\)", 
+        r'<a href="\2" target="_blank" style="color: #0b459c; text-decoration: underline; font-weight: bold;">\1</a>', 
+        formatted_text
+    )
+
     for title in titles:
         formatted_text = re.sub(
             rf"(?m)^({re.escape(title)})$",
