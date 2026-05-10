@@ -91,13 +91,16 @@ def get_ordinance_data(query, semantic_tags=""):
 
 @st.cache_data
 def load_law_links():
-    """link.csv 파일을 읽어 {법규명: 원문링크} 딕셔너리를 반환합니다."""
     path = "link.csv"
     if os.path.exists(path):
-        try:
-            # link.csv를 읽어 법규명과 링크를 매핑합니다.
-            df = pd.read_csv(path, encoding='utf-8-sig')
-            return dict(zip(df['법규명'], df['원문링크']))
-        except:
-            return {}
+        # 다양한 인코딩 시도
+        for enc in ['utf-8-sig', 'cp949', 'utf-8', 'euc-kr']:
+            try:
+                df = pd.read_csv(path, encoding=enc)
+                # 컬럼명과 데이터의 앞뒤 공백을 완전히 제거하여 매칭 확률을 높임
+                df.columns = [c.strip() for c in df.columns]
+                if '법규명' in df.columns and '원문링크' in df.columns:
+                    return {str(k).strip(): str(v).strip() for k, v in zip(df['법규명'], df['원문링크'])}
+            except:
+                continue
     return {}
