@@ -8,7 +8,11 @@ import numpy as np
 import base64
 import os
 import io
+from widget_utils import inject_floating_button
 from docx import Document  # [최적화] 조건문 내부의 import를 최상단으로 이동
+
+# 용인시 민원창구 연계버튼
+inject_floating_button()
 
 # [구조 분리] 백엔드 통합 프로세서
 from processor import handle_ai_analysis, generate_civil_document # generate_civil_document 추가
