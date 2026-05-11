@@ -1,14 +1,9 @@
 # processor.py
 from datetime import datetime
 import streamlit as st
-import requests
-import json
-import time
-
 from engine import get_semantic_keywords, get_gemini_response
 from database import get_ordinance_data
 from storage import save_history
-
 
 def handle_ai_analysis(user_query):
     """
@@ -73,60 +68,6 @@ def handle_ai_analysis(user_query):
 
     return response_text
 
-
-# 민원 생성용 LLM 호출 함수
-def llm_invoke_function(system_prompt, user_prompt):
-    """
-    민원 양식 생성 전용 Gemini 호출 함수
-    기존 processor.py의 system_prompt, user_prompt 구조를 그대로 사용합니다.
-    """
-    MODEL_NAME = "gemini-2.5-flash"
-    api_key = st.secrets["GEMINI_API_KEY"]
-
-    url = f"https://generativelanguage.googleapis.com/v1/models/{MODEL_NAME}:generateContent?key={api_key}"
-    headers = {
-        "Content-Type": "application/json"
-    }
-
-    prompt = f"""
-{system_prompt}
-
-[사용자 입력]
-{user_prompt}
-"""
-
-    payload = {
-        "contents": [
-            {
-                "parts": [
-                    {
-                        "text": prompt
-                    }
-                ]
-            }
-        ]
-    }
-
-    for i in range(5):
-        try:
-            response = requests.post(
-                url,
-                headers=headers,
-                data=json.dumps(payload),
-                timeout=100
-            )
-
-            if response.status_code == 200:
-                return response.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
-
-            time.sleep(2)
-
-        except Exception:
-            time.sleep(2)
-
-    return "민원서 생성 중 시스템 엔진 응답에 실패했습니다. 잠시 후 다시 시도해 주세요."
-
-
 # 민원 생성 함수
 
 def generate_civil_document(civil_type, site_address, civil_content):
@@ -162,5 +103,10 @@ def generate_civil_document(civil_type, site_address, civil_content):
 
     user_prompt = f"다음 민원 내용을 바탕으로 양식을 생성해줘: {civil_content}"
 
-    # LLM 호출 및 결과 반환
+    # LLM 호출 및 결과 반환 (예시 구조)
+    # result = llm.invoke([SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)])
+    # return result.content
+
+    # 실제 환경에 맞는 호출 함수를 사용하세요.
     return llm_invoke_function(system_prompt, user_prompt)
+
