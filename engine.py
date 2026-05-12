@@ -20,15 +20,25 @@ def get_semantic_keywords(user_query):
 
 def apply_law_links(text):
     link_db = load_law_links()
-    if not link_db:
-        return text
+    if not link_db: return text
     
     found_links = []
-    # 비교용 텍스트 생성 (본문의 공백/특수문자 무시)
     clean_text = re.sub(r'[\s\.\,\(\)\[\]]', '', text)
-    
-    # 긴 이름부터 매칭 시도
     sorted_law_names = sorted(link_db.keys(), key=len, reverse=True)
+    
+    for law_name in sorted_law_names:
+        law_name_no_space = law_name.replace(" ", "")
+        if law_name_no_space in clean_text:
+            url = link_db[law_name]
+            # [핵심] 마크다운 문법 대신 특수 구분자(|||)를 사용하여 주소를 온전히 보존
+            link_entry = f"- [**{law_name}**]|||{url}|||"
+            if link_entry not in found_links:
+                found_links.append(link_entry)
+    
+    if found_links:
+        link_section = "\n\n---\n\n### 🔗 관련 법령 원문 링크 (클릭 시 이동)\n\n" + "\n".join(found_links)
+        return text + link_section
+    return text
     
     for law_name in sorted_law_names:
         law_name_no_space = law_name.replace(" ", "")
