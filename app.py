@@ -7,6 +7,7 @@ import numpy as np
 import base64
 import os
 import io
+import uuid  # 💡 [신규 추가] 고유 ID(신분증) 발급을 위한 파이썬 기본 라이브러리
 from widget_utils import inject_floating_button
 from docx import Document  # [최적화] 조건문 내부의 import를 최상단으로 이동
 # import streamlit.components.v1 as components 이제 지원되지 않는 코드라 해서 제거함(5/10 수)
@@ -31,8 +32,12 @@ def get_image_base64(image_path):
 st.set_page_config(page_title="용인시 건축 조례 지원 플랫폼", layout="wide")
 
 # 2. 상태 변수 초기화
+    # 💡 [신규 추가] 접속한 브라우저마다 고유한 user_id 부여 (새로고침해도 유지됨)
+if "user_id" not in st.session_state:
+    st.session_state.user_id = uuid.uuid4().hex
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = load_history()
+    # 💡 [수정] 기록을 불러올 때 user_id를 함께 넘겨서 내 기록만 가져옴
+    st.session_state.chat_history = load_history(st.session_state.user_id)
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 if "dark_mode_toggle" not in st.session_state:
@@ -121,12 +126,13 @@ with st.sidebar:
     else:
         st.caption("저장된 분석 기록이 없습니다.")
 
-    st.divider()
+   st.divider()
     if st.button("🗑️ 전체 기록 삭제"):
         st.session_state.chat_history = []
         st.session_state.selected_index = None
         from storage import clear_history
-        clear_history() 
+        # 💡 [수정] 기록을 지울 때도 user_id를 넘겨서 내 기록 파일만 삭제함
+        clear_history(st.session_state.user_id) 
         st.rerun()
 
 
