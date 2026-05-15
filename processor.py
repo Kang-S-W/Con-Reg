@@ -63,7 +63,7 @@ def handle_ai_analysis(user_query):
     if "messages" not in current_chat:
         current_chat["messages"] = []
 
-    # 현재 대화방 안에 질문/답변 추가 (시간도 KST로)
+   # 현재 대화방 안에 질문/답변 추가 (시간도 KST로)
     current_chat["messages"].append({
         "query": user_query,
         "response": response_text,
@@ -73,8 +73,8 @@ def handle_ai_analysis(user_query):
     # 마지막 업데이트 시간 갱신
     current_chat["updated_at"] = kst_now
 
-    # JSON 파일로 최종 저장
-    save_history(st.session_state.chat_history)
+    # 💡 [수정] JSON 파일로 최종 저장 시 st.session_state.user_id를 함께 넘김
+    save_history(st.session_state.chat_history, st.session_state.user_id)
 
     return response_text
 
