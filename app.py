@@ -226,9 +226,6 @@ with st.sidebar:
     if st.button("📝 민원 양식 생성", use_container_width=True):
         st.session_state.current_page = "doc_gen"
         st.rerun()
-    if st.button("🗺️ 대지 위치 시각화", use_container_width=True):
-        st.session_state.current_page = "map"
-        st.rerun()
     if st.button("💡 Q&A 게시판", use_container_width=True):
         st.session_state.current_page = "qna"
         st.rerun()
@@ -491,44 +488,7 @@ elif st.session_state.current_page == "doc_gen":
                     with st.expander("상세 오류"):
                         st.code(traceback.format_exc())
 
-
-# --- 🗺️ 3. 대지 위치 시각화 (독립된 지도 페이지) ---
-elif st.session_state.current_page == "map":
-    st.title("🗺️ 대지 위치 및 건축선 시각화")
-    st.write("카카오 지도를 통해 대지 위치 및 주변 환경을 확인합니다.")
-    st.write("")
-    
-    KAKAO_JS_KEY = "본인의_카카오_자바스크립트_앱_키를_여기에_붙여넣으세요"
-    map_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <style>
-            #map {{ width: 100%; height: 650px; border-radius: 12px; border: 1px solid #eaeaea; }}
-        </style>
-    </head>
-    <body>
-        <div id="map"></div>
-        <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey={KAKAO_JS_KEY}"></script>
-        <script>
-            var mapContainer = document.getElementById('map'); 
-            var mapOption = {{ center: new kakao.maps.LatLng(37.241086, 127.177553), level: 4 }};
-            var map = new kakao.maps.Map(mapContainer, mapOption);
-            map.addControl(new kakao.maps.MapTypeControl(), kakao.maps.ControlPosition.TOPRIGHT);
-            map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
-            map.addOverlayMapTypeId(kakao.maps.MapTypeId.USE_DISTRICT);
-        </script>
-    </body>
-    </html>
-    """
-    if KAKAO_JS_KEY == "본인의_카카오_자바스크립트_앱_키를_여기에_붙여넣으세요":
-        st.warning("🚧 카카오 JavaScript API 키를 코드에 입력해 주세요.")
-    else:
-        # 아래 코드 지원 안한다 그래서 수정함 (5/10)
-        st.iframe("data:text/html;charset=utf-8," + map_html, height=670)
-
-# --- 💡 4. Q&A 게시판 (관리자 기능 복구) ---
+# --- 💡 3. Q&A 게시판 (관리자 기능 복구) ---
 elif st.session_state.current_page == "qna":
     st.title("💡 자주 묻는 질문 (FAQ) 및 Q&A")
     st.write("플랫폼 사용법 및 건축 법령 해석과 관련된 질문을 확인하고 남길 수 있습니다.")
@@ -593,7 +553,7 @@ elif st.session_state.current_page == "qna":
             st.error("비밀번호가 일치하지 않습니다.")
 
 
-# --- 🗺️ 5. 사이트맵 (이하 원본과 동일) ---
+# --- 🗺️ 4. 사이트맵 (이하 원본과 동일) ---
 elif st.session_state.current_page == "sitemap":
     st.title("🗺️ 플랫폼 시스템 아키텍처 및 사이트맵")
     st.info("용인시 건축 조례 전문 해석 AI 플랫폼의 전체 구조와 취급 법규 목록입니다.")
@@ -629,7 +589,6 @@ elif st.session_state.current_page == "sitemap":
             <div class="layer-title">대국민 / 실무자 서비스 (UI)</div>
             <div class="box-row">
                 <div class="arch-box">🤖 AI 건축 규제 검토<span>(법령 시맨틱 분석 질의응답)</span></div>
-                <div class="arch-box">🗺️ 대지 위치 시각화<span>(카카오 지도 및 건축선 확인)</span></div>
                 <div class="arch-box">📝 민원 양식 생성<span>(행정 서류 자동 완성)</span></div>
                 <div class="arch-box">💡 Q&A 게시판<span>(자주 묻는 질문 및 사용자 커뮤니티)</span></div>
             </div>
@@ -652,9 +611,6 @@ elif st.session_state.current_page == "sitemap":
             <div class="data-source-row">
                 <div class="data-source">
                     <img class="custom-icon" src="{moleg_src}" alt="법제처" onerror="this.style.display='none'"> 국가법령정보센터
-                </div>
-                <div class="data-source">
-                    <img class="kakao-icon" src="{kakao_src}" alt="카카오맵" onerror="this.style.display='none'"> 카카오맵 API
                 </div>
                 <div class="data-source">
                     <span class="emoji-icon">🗄️</span> 로컬 DB
