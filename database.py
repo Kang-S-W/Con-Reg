@@ -108,3 +108,18 @@ def load_law_links():
                     return links
             except: continue
     return {}
+
+#용인시청 사이트맵 기능 추
+@st.cache_data
+def load_sitemap_db():
+    """용인시청 사이트맵 DB 로드"""
+    path = "용인시청사이트맵.csv"
+    if os.path.exists(path):
+        for enc in ['utf-8-sig', 'cp949', 'utf-8', 'euc-kr']:
+            try:
+                df = pd.read_csv(path, encoding=enc)
+                df.columns = [c.strip() for c in df.columns]
+                return df
+            except:
+                continue
+    return None
