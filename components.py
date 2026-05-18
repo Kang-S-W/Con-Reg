@@ -27,6 +27,7 @@ def render_ai_report(response_text):
         return f"\n\n{title}\n{body}" if body else f"\n\n{title}"
     response_text = re.sub(pattern, fix_heading, response_text)
     response_text = re.sub(r"\n{3,}", "\n\n", response_text).strip()
+    response_text = response_text.replace("**", "")
 
     # 3. 화면 표시용 HTML 변환
     formatted_text = html.escape(response_text)
