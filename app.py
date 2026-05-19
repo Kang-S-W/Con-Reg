@@ -7,16 +7,21 @@ import numpy as np
 import base64
 import os
 import io
-import uuid  
+import uuid  # 💡 [신규 추가] 고유 ID(신분증) 발급을 위한 파이썬 기본 라이브러리
 from widget_utils import inject_floating_button
-from docx import Document  
+from docx import Document  # [최적화] 조건문 내부의 import를 최상단으로 이동
+# import streamlit.components.v1 as components 이제 지원되지 않는 코드라 해서 제거함(5/10 수)
+
+# 용인시 민원창구 연계버튼
+inject_floating_button()
 
 # [구조 분리] 백엔드 통합 프로세서
-from processor import handle_ai_analysis, generate_civil_document 
+from processor import handle_ai_analysis, generate_civil_document # generate_civil_document 추가
+from style import apply_custom_style
 from components import render_user_message, render_ai_report
 from storage import load_history, save_history 
 
-# --- [로컬 이미지 변환 함수] ---
+# --- [로컬 이미지 변환 함수] 이미지가 깨지지 않도록 Base64로 인코딩 ---
 def get_image_base64(image_path):
     if os.path.exists(image_path):
         with open(image_path, "rb") as img_file:
@@ -26,11 +31,16 @@ def get_image_base64(image_path):
 # 1. 페이지 설정 (최상단)
 st.set_page_config(page_title="용인시 건축 조례 지원 플랫폼", layout="wide")
 
+# (위쪽 import 부분에 만약 'import uuid'가 있다면 그 줄은 삭제하셔도 됩니다.)
+
 # 2. 상태 변수 초기화
+# 💡 [수정] 무작위 임시 ID 발급 로직을 지우고, 무조건 "guest" 상태로 시작하도록 변경
 if "user_id" not in st.session_state:
-    st.session_state.user_id = uuid.uuid4().hex
+    st.session_state.user_id = "guest"
+
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = load_history(st.session_state.user_id)
+
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 if "dark_mode_toggle" not in st.session_state:
@@ -42,105 +52,172 @@ if "selected_index" not in st.session_state:
 if "current_page" not in st.session_state:
     st.session_state.current_page = "main"
 if "qna_list" not in st.session_state:
-    st.session_state.qna_list = [] 
+    st.session_state.qna_list = []
 
-# 용인시 민원창구 연계버튼
-inject_floating_button()
+# 3. 스타일 적용
+apply_custom_style(st.session_state.dark_mode)
 
+# [CSS 패치 생략 없이 원본 유지]
+if st.session_state.dark_mode:
+    st.markdown("""
+    <style>
+        div[data-testid="stExpander"] details summary { background-color: #262730 !important; color: #ffffff !important; }
+        div[data-testid="stExpander"] details summary p { color: #ffffff !important; }
+        div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div { background-color: #262730 !important; }
+        input, textarea { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+        div[data-testid="stFormSubmitButton"] button, div[data-testid="stButton"] button {
+            background-color: #333333 !important; color: #ffffff !important; border: 1px solid #555555 !important;
+        }
+        div[data-testid="stFormSubmitButton"] button p, div[data-testid="stButton"] button p { color: #ffffff !important; }
+        div[data-testid="stFormSubmitButton"] button:hover, div[data-testid="stButton"] button:hover {
+            background-color: #444444 !important; border: 1px solid #ffffff !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <style>
+        div[data-testid="stExpander"] details summary p, input, textarea { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
+        div[data-testid="stFormSubmitButton"] button p, div[data-testid="stButton"] button p { color: #000000 !important; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# 3. 프리미엄 스타일 적용 (들여쓰기 버그 완벽 수정)
-def apply_premium_style(is_dark_mode):
-    # CSS 문자열 앞의 공백을 모두 제거하여 코드 블록으로 인식되는 것을 방지합니다.
-    common_css = """
-<style>
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+# --- [대화기록 검색 팝업 함수] 검색어 입력 시 관련 대화를 모달창에 표시 ---
+dialog_decorator = st.dialog if hasattr(st, "dialog") else st.experimental_dialog
 
-* { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important; }
+@dialog_decorator("🔍 대화기록 검색", width="large")
+def open_history_search_dialog():
+    st.markdown("""
+    <style>
+        div[data-testid="stDialog"] div[role="dialog"] { width: min(760px, 92vw) !important; }
+        .search-result-meta {
+            font-size: 13px; color: #777; line-height: 1.35;
+            margin-top: -6px; margin-bottom: 8px;
+        }
+        .search-result-separator {
+            border-bottom: 1px solid #d9d9d9;
+            margin: 8px 0 10px 0;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
-header { visibility: hidden; }
-footer { visibility: hidden; }
+    search_query = st.text_input(
+        "검색어 입력",
+        placeholder="예: 일조권, 건폐율, 접도, 주차장",
+        key="dialog_history_search_input"
+    )
+    query = search_query.strip().lower()
 
-div { transition: background-color 0.3s ease, color 0.3s ease; }
+    if not st.session_state.chat_history:
+        st.caption("저장된 대화기록이 없습니다.")
+        return
 
-div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div {
-    border-radius: 12px !important;
-    border: 1px solid transparent !important;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
-}
-div[data-baseweb="input"] > div:focus-within, div[data-baseweb="textarea"] > div:focus-within {
-    border-color: #0b459c !important;
-    box-shadow: 0 0 0 2px rgba(11, 69, 156, 0.2) !important;
-}
+    results = []
+    for idx, chat in enumerate(st.session_state.chat_history):
+        title = chat.get("title", "새 대화")
+        searchable_text = title + " "
 
-div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {
-    border-radius: 10px !important;
-    font-weight: 600 !important;
-    border: none !important;
-    transition: all 0.2s ease !important;
-}
-div[data-testid="stButton"] button:active, div[data-testid="stFormSubmitButton"] button:active {
-    transform: scale(0.98) !important;
-}
+        for msg in chat.get("messages", []):
+            searchable_text += msg.get("query", "") + " "
+            searchable_text += msg.get("response", "") + " "
 
-div[data-testid="stExpander"] {
-    border-radius: 12px !important;
-    border: none !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
-    margin-bottom: 10px !important;
-}
-</style>
-"""
+        if not query or query in searchable_text.lower():
+            results.append((idx, chat))
 
-    if is_dark_mode:
-        theme_css = """
-<style>
-.stApp { background-color: #1a1a1c !important; }
-div[data-testid="stSidebar"] { background-color: #242426 !important; border-right: 1px solid #333333 !important; }
+    st.caption(f"검색어: {search_query} · 결과 {len(results)}개" if query else "최근 대화")
 
-div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div { background-color: #2c2c2e !important; }
-input, textarea { color: #f5f5f7 !important; -webkit-text-fill-color: #f5f5f7 !important; }
+    if not results:
+        st.warning("검색 결과가 없습니다.")
+        return
 
-div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {
-    background-color: #2c2c2e !important; color: #f5f5f7 !important; box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
-}
-div[data-testid="stButton"] button:hover, div[data-testid="stFormSubmitButton"] button:hover {
-    background-color: #3a3a3c !important;
-}
-div[data-testid="stExpander"] { background-color: #242426 !important; }
-div[data-testid="stExpander"] details summary { color: #f5f5f7 !important; }
-div[data-testid="stExpander"] details summary p { color: #f5f5f7 !important; }
-</style>
-"""
-    else:
-        theme_css = """
-<style>
-.stApp { background-color: #fbfbfd !important; }
-div[data-testid="stSidebar"] { background-color: #ffffff !important; border-right: 1px solid #f0f0f0 !important; }
+    with st.container(height=430, border=False):
+        for idx, chat in reversed(results[-20:]):
+            title = chat.get("title", "새 대화")
+            time_str = chat.get("updated_at", chat.get("created_at", ""))
+            messages = chat.get("messages", [])
 
-div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div { background-color: #ffffff !important; border: 1px solid #d2d2d7 !important; }
-input, textarea { color: #1d1d1f !important; -webkit-text-fill-color: #1d1d1f !important; }
+            preview = messages[0].get("query", "") if messages else ""
+            preview = preview[:70] + "..." if len(preview) > 70 else preview
 
-div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {
-    background-color: #ffffff !important; color: #1d1d1f !important; border: 1px solid #d2d2d7 !important; box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
-}
-div[data-testid="stButton"] button:hover, div[data-testid="stFormSubmitButton"] button:hover {
-    background-color: #f5f5f7 !important;
-}
-div[data-testid="stExpander"] { background-color: #ffffff !important; }
-div[data-testid="stExpander"] details summary { color: #1d1d1f !important; }
-div[data-testid="stExpander"] details summary p { color: #1d1d1f !important; }
-</style>
-"""
-    st.markdown(common_css + theme_css, unsafe_allow_html=True)
+            short_title = title[:28] + "..." if len(title) > 28 else title
 
-# 스타일 함수 호출
-apply_premium_style(st.session_state.dark_mode)
+            if st.button(f"💬 {short_title}", key=f"dialog_open_chat_{idx}", use_container_width=True):
+                st.session_state.selected_index = idx
+                st.session_state.current_page = "main"
+                st.rerun()
 
+            meta_text = preview
+            if time_str:
+                meta_text += f"<br>{time_str}" if meta_text else time_str
+
+            if meta_text:
+                st.markdown(f'<div class="search-result-meta">{meta_text}</div>', unsafe_allow_html=True)
+
+            st.markdown('<div class="search-result-separator"></div>', unsafe_allow_html=True)
 
 # 4. 사이드바 구성
 with st.sidebar:
     st.title("⚙️ 플랫폼 제어")
     
+    # 💡 [정식 도입] 정밀 회원인증 및 아이디 중복 차단 관리 UI
+    st.subheader("👤 실무자 시스템 인증")
+    
+    if st.session_state.user_id == "guest":
+        # 로그인과 회원가입을 명확히 분할하는 시스템 탭 구성
+        auth_tabs = st.tabs(["🔑 로그인", "📝 회원가입"])
+        
+        # --- [탭 A: 로그인 처리] ---
+        with auth_tabs[0]:
+            with st.form("login_form"):
+                login_id = st.text_input("아이디", key="login_id_input", placeholder="아이디 입력")
+                login_pw = st.text_input("비밀번호", type="password", key="login_pw_input", placeholder="비밀번호 입력")
+                submit_login = st.form_submit_button("시스템 로그인", use_container_width=True)
+                
+                if submit_login:
+                    if not login_id.strip() or not login_pw.strip():
+                        st.error("아이디와 비밀번호를 모두 입력해 주세요.")
+                    else:
+                        from storage import authenticate_user
+                        if authenticate_user(login_id.strip(), login_pw.strip()):
+                            st.session_state.user_id = login_id.strip()
+                            st.session_state.chat_history = load_history(st.session_state.user_id)
+                            st.success(f"🔓 {st.session_state.user_id}님, 로그인 성공")
+                            st.rerun()
+                        else:
+                            st.error("❌ 아이디 또는 비밀번호가 일치하지 않습니다.")
+                            
+        # --- [탭 B: 회원가입 처리 - 중복 원천 차단] ---
+        with auth_tabs[1]:
+            with st.form("register_form", clear_on_submit=True):
+                reg_id = st.text_input("사용할 아이디", key="reg_id_input", placeholder="예: architect01")
+                reg_pw = st.text_input("비밀번호 설정", type="password", key="reg_pw_input", placeholder="비밀번호 입력")
+                reg_pw_conf = st.text_input("비밀번호 확인", type="password", key="reg_pw_conf_input", placeholder="비밀번호 다시 입력")
+                submit_reg = st.form_submit_button("회원가입 신청", use_container_width=True)
+                
+                if submit_reg:
+                    if not reg_id.strip() or not reg_pw.strip() or not reg_pw_conf.strip():
+                        st.error("모든 빈칸을 채워주세요.")
+                    elif reg_pw != reg_pw_conf:
+                        st.error("❌ 비밀번호 확인이 일치하지 않습니다.")
+                    else:
+                        from storage import check_id_exists, register_user
+                        # 통상적인 웹사이트 프로세스: 가입 전 중복 상태 실시간 차단
+                        if check_id_exists(reg_id.strip()):
+                            st.error("⚠️ 이미 가입된 아이디입니다. 다른 아이디를 사용해 주세요.")
+                        else:
+                            if register_user(reg_id.strip(), reg_pw.strip()):
+                                st.success("✅ 회원가입이 완료되었습니다! 로그인 탭에서 이용해 주세요.")
+                            else:
+                                st.error("회원가입 처리 중 오류가 발생했습니다.")
+    else:
+        st.success(f"🟢 실무자 세션 연결됨: **{st.session_state.user_id}**")
+        if st.button("안전 로그아웃", use_container_width=True, type="primary"):
+            st.session_state.user_id = "guest"
+            st.session_state.chat_history = load_history("guest")
+            st.session_state.selected_index = None
+            st.rerun()
+
+    st.divider()
     st.subheader("📌 메뉴")
     
     if st.button("🏠 메인화면 (챗봇)", use_container_width=True):
@@ -148,9 +225,6 @@ with st.sidebar:
         st.rerun()
     if st.button("📝 민원 양식 생성", use_container_width=True):
         st.session_state.current_page = "doc_gen"
-        st.rerun()
-    if st.button("🗺️ 대지 위치 시각화", use_container_width=True):
-        st.session_state.current_page = "map"
         st.rerun()
     if st.button("💡 Q&A 게시판", use_container_width=True):
         st.session_state.current_page = "qna"
@@ -166,6 +240,8 @@ with st.sidebar:
         st.session_state.selected_index = None
         st.session_state.current_page = "main"
         st.rerun()
+    if st.button("🔍 대화 검색", use_container_width=True):
+        open_history_search_dialog()
         
     st.divider()
     st.subheader("📁 대화 이력 (클릭 시 열람)")
@@ -173,9 +249,14 @@ with st.sidebar:
     if st.session_state.chat_history:
         for i, chat in enumerate(reversed(st.session_state.chat_history)):
             actual_index = len(st.session_state.chat_history) - 1 - i
-            time_str = chat.get("updated_at", chat.get("created_at", "00:00:00"))[11:16]
+            
+            # 💡 [수정] [:16]으로 변경하면 '2026-05-18 15:30' 까지 잘라냅니다.
+            # (만약 연도를 빼고 '05-18 15:30'만 보려면 [5:16]으로 하시면 됩니다)
+            time_str = chat.get("updated_at", chat.get("created_at", "0000-00-00 00:00:00"))[:16]
+            
             query_summary = chat.get("title", "새 대화")
-            if len(query_summary) > 12: query_summary = query_summary[:12] + "..."
+            # 공간이 좁을 수 있으므로 제목 길이를 12자에서 10자로 살짝 줄이는 것을 권장합니다.
+            if len(query_summary) > 10: query_summary = query_summary[:10] + "..."
             
             if st.button(f"🕒 {time_str} | {query_summary}", key=f"hist_{actual_index}", use_container_width=True):
                 st.session_state.selected_index = actual_index
@@ -251,12 +332,14 @@ if st.session_state.current_page == "main":
             st.rerun()
 
 
-# --- 📝 2. 민원 양식 생성 ---
+# --- 📝 2. 민원 양식 생성 (개선 및 최적화 반영) ---
 elif st.session_state.current_page == "doc_gen":
     st.title("📝 용인시 맞춤형 건축 민원 양식 생성")
 
+    # [개선 1, 3] 용인시 한정 및 법적 검토 배제 문구 적용
     st.info("""
     용인시 관내 건축 관련 민원을 입력하면 다음을 지원합니다:
+
     ✔️ AI 기반 민원서 자동 완성 (양식 작성에 집중)
     ✔️ 민원별 필요 서류 안내
     ✔️ 용인시 맞춤형 접수 절차 안내
@@ -266,6 +349,7 @@ elif st.session_state.current_page == "doc_gen":
     """)
     st.divider()
 
+    # [최적화] 구조체 외부 분리를 통한 반복 렌더링 방지 및 유지보수 향상
     required_docs = {
         "건축허가 관련": ["건축허가 신청서", "배치도", "평면도", "토지이용계획확인서", "건축계획서"],
         "건축선 문의": ["대지 위치도", "토지이용계획확인서", "현장 사진"],
@@ -288,12 +372,25 @@ elif st.session_state.current_page == "doc_gen":
         "기타": "민원여권과"
     }
 
+    # 1. 민원 유형 선택 (하드코딩 제거)
     civil_type = st.selectbox("📌 민원 유형 선택", list(required_docs.keys()))
-    site_address = st.text_input("📍 대상 건축물 주소", placeholder="예: 경기도 용인시 처인구 ...")
-    civil_content = st.text_area("✏️ 민원 내용을 상세히 입력해주세요", height=250, placeholder="예: 인접 대지 건축물로 인해 일조권 침해가 발생하고 있습니다...")
+
+    # 2. 주소 입력
+    site_address = st.text_input(
+        "📍 대상 건축물 주소",
+        placeholder="예: 경기도 용인시 처인구 ..."
+    )
+
+    # 3. 민원 내용 입력
+    civil_content = st.text_area(
+        "✏️ 민원 내용을 상세히 입력해주세요",
+        height=250,
+        placeholder="예: 인접 대지 건축물로 인해 일조권 침해가 발생하고 있습니다..."
+    )
 
     st.divider()
 
+    # 4. 민원 생성 버튼
     if st.button("📄 AI 민원 양식 생성", use_container_width=True):
         if not site_address or not civil_content:
             st.error("주소와 민원 내용을 모두 입력해주세요.")
@@ -301,52 +398,73 @@ elif st.session_state.current_page == "doc_gen":
             with st.status("🔍 민원서 생성 중...", expanded=True) as status:
                 try:
                     st.write("🛰️ 서식 구조화 및 양식 작성 중...")
-                    result = generate_civil_document(civil_type, site_address, civil_content)
+                    
+                    # [개선 5 반영] 메인 챗봇 히스토리와 완전 분리됨
+                    # processor.py에서 단발성(Stateless) 호출로 수정되었으므로 그대로 사용합니다.
+                    result = generate_civil_document(
+                        civil_type,
+                        site_address,
+                        civil_content
+                    )
+                    
+                    # (선택사항) 민원 양식 생성 후, 세션에 선택된 기존 챗봇 인덱스가 꼬이는 것을 방지
                     st.session_state.selected_index = None
 
                     status.update(label="✅ 민원서 생성 완료", state="complete")
                     st.success("민원서 생성이 완료되었습니다.")
 
+                    # --- 생성 결과 출력 ---
                     st.subheader("📄 생성된 민원서")
                     st.markdown(result)
                     st.divider()
 
+                    # --- 필요 서류 안내 ---
                     st.subheader("📎 민원 접수 시 필요 서류")
                     docs = required_docs.get(civil_type, required_docs["기타"])
                     for doc in docs:
                         st.write(f"✔️ {doc}")
                     st.divider()
 
+                    # --- 담당 부서 안내 ---
                     dept = department_map.get(civil_type, "민원여권과")
                     st.subheader("🏢 예상 담당 부서")
                     st.info(f"📌 추천 담당 부서: 용인시 {dept} (또는 각 구청 {dept})")
                     st.divider()
 
+                    # --- [개선 2, 4] 접수 절차 구체화 및 직관적인 링크 배치 ---
                     st.subheader("🏛️ 용인시 민원 접수 절차 안내")
+
                     st.markdown("""
                     ### ✅ 온라인 접수
-                    * **[🔗 정부24 (gov.kr)](https://www.gov.kr)** : 로그인 ➔ 민원신청 ➔ '건축' 검색 ➔ 해당 서식 작성 및 파일 첨부 ➔ 신청 완료
-                    * **[🔗 국민신문고 (epeople.go.kr)](https://www.epeople.go.kr)** : 로그인 ➔ 민원신청 ➔ 생성된 본문 복사/붙여넣기 ➔ 처리기관을 '용인시'로 지정 ➔ 신청 완료
-                    * **[🔗 용인시청 홈페이지 (yongin.go.kr)](https://www.yongin.go.kr)** : 로그인 ➔ 시민참여 ➔ 종합민원 ➔ 민원신청 게시판 등록
+                    * **[🔗 정부24 (gov.kr)](https://www.gov.kr)**
+                      : 로그인 ➔ 민원신청 ➔ '건축' 검색 ➔ 해당 서식 작성 및 파일 첨부 ➔ 신청 완료
+                    * **[🔗 국민신문고 (epeople.go.kr)](https://www.epeople.go.kr)**
+                      : 로그인 ➔ 민원신청 ➔ 생성된 본문 복사/붙여넣기 ➔ 처리기관을 **'용인시'**로 지정 ➔ 신청 완료
+                    * **[🔗 용인시청 홈페이지 (yongin.go.kr)](https://www.yongin.go.kr)**
+                      : 로그인 ➔ 시민참여 ➔ 종합민원 ➔ 민원신청 게시판 등록
 
                     ### ✅ 방문(오프라인) 접수
                     * **접수처**: 용인시청 종합민원실 및 각 구청(처인구, 기흥구, 수지구) 건축허가과 민원창구
                     * **절 차**: 신분증 및 필요 서류(출력물) 지참 ➔ 방문 ➔ 번호표 발급 대기 ➔ 담당자 서류 제출 및 접수증 수령
 
                     ### ✅ 전화 사전 문의
-                    * **용인시 민원콜센터 (☎️ 1577-1122)** : 방문 전 부서 연결 및 기본 서류, 접수 가능 여부 사전 안내
+                    * **용인시 민원콜센터 (☎️ 1577-1122)**
+                      : 방문 전 부서 연결 및 기본 서류, 접수 가능 여부 사전 안내
                     """)
                     st.divider()
 
+                    # --- 민원 조회 방법 ---
                     st.subheader("🔍 민원 처리 상태 조회")
                     st.success("""
                     접수 후 아래 경로에서 처리 현황을 확인할 수 있습니다.
+                    
                     ✔️ **정부24** ➔ MyGOV ➔ 나의 신청내역
                     ✔️ **국민신문고** ➔ 나의 민원 ➔ 나의 민원결과
                     ✔️ **용인시청** ➔ 전자민원 ➔ 나의 민원 조회
                     """)
                     st.divider()
 
+                    # --- DOCX 다운로드 ---
                     st.subheader("📥 민원서 다운로드")
                     doc = Document()
                     doc.add_heading('용인시 건축 행정 민원서', level=1)
@@ -366,6 +484,7 @@ elif st.session_state.current_page == "doc_gen":
                         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                         use_container_width=True
                     )
+
                     st.caption("※ 여기서 제공하는 민원양식은 하나의 예시로 상황과 목적에 따라 적절하게 수정하여 사용하는 것을 권장합니다.")
 
                 except Exception as e:
@@ -374,43 +493,7 @@ elif st.session_state.current_page == "doc_gen":
                     with st.expander("상세 오류"):
                         st.code(traceback.format_exc())
 
-
-# --- 🗺️ 3. 대지 위치 시각화 ---
-elif st.session_state.current_page == "map":
-    st.title("🗺️ 대지 위치 및 건축선 시각화")
-    st.write("카카오 지도를 통해 대지 위치 및 주변 환경을 확인합니다.")
-    st.write("")
-    
-    KAKAO_JS_KEY = "본인의_카카오_자바스크립트_앱_키를_여기에_붙여넣으세요"
-    map_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <style>
-            #map {{ width: 100%; height: 650px; border-radius: 12px; border: 1px solid #eaeaea; }}
-        </style>
-    </head>
-    <body>
-        <div id="map"></div>
-        <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey={KAKAO_JS_KEY}"></script>
-        <script>
-            var mapContainer = document.getElementById('map'); 
-            var mapOption = {{ center: new kakao.maps.LatLng(37.241086, 127.177553), level: 4 }};
-            var map = new kakao.maps.Map(mapContainer, mapOption);
-            map.addControl(new kakao.maps.MapTypeControl(), kakao.maps.ControlPosition.TOPRIGHT);
-            map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
-            map.addOverlayMapTypeId(kakao.maps.MapTypeId.USE_DISTRICT);
-        </script>
-    </body>
-    </html>
-    """
-    if KAKAO_JS_KEY == "본인의_카카오_자바스크립트_앱_키를_여기에_붙여넣으세요":
-        st.warning("🚧 카카오 JavaScript API 키를 코드에 입력해 주세요.")
-    else:
-        st.iframe("data:text/html;charset=utf-8," + map_html, height=670)
-
-# --- 💡 4. Q&A 게시판 ---
+# --- 💡 3. Q&A 게시판 (관리자 기능 복구) ---
 elif st.session_state.current_page == "qna":
     st.title("💡 자주 묻는 질문 (FAQ) 및 Q&A")
     st.write("플랫폼 사용법 및 건축 법령 해석과 관련된 질문을 확인하고 남길 수 있습니다.")
@@ -475,7 +558,7 @@ elif st.session_state.current_page == "qna":
             st.error("비밀번호가 일치하지 않습니다.")
 
 
-# --- 🗺️ 5. 사이트맵 ---
+# --- 🗺️ 4. 사이트맵 (이하 원본과 동일) ---
 elif st.session_state.current_page == "sitemap":
     st.title("🗺️ 플랫폼 시스템 아키텍처 및 사이트맵")
     st.info("용인시 건축 조례 전문 해석 AI 플랫폼의 전체 구조와 취급 법규 목록입니다.")
@@ -511,7 +594,6 @@ elif st.session_state.current_page == "sitemap":
             <div class="layer-title">대국민 / 실무자 서비스 (UI)</div>
             <div class="box-row">
                 <div class="arch-box">🤖 AI 건축 규제 검토<span>(법령 시맨틱 분석 질의응답)</span></div>
-                <div class="arch-box">🗺️ 대지 위치 시각화<span>(카카오 지도 및 건축선 확인)</span></div>
                 <div class="arch-box">📝 민원 양식 생성<span>(행정 서류 자동 완성)</span></div>
                 <div class="arch-box">💡 Q&A 게시판<span>(자주 묻는 질문 및 사용자 커뮤니티)</span></div>
             </div>
@@ -534,9 +616,6 @@ elif st.session_state.current_page == "sitemap":
             <div class="data-source-row">
                 <div class="data-source">
                     <img class="custom-icon" src="{moleg_src}" alt="법제처" onerror="this.style.display='none'"> 국가법령정보센터
-                </div>
-                <div class="data-source">
-                    <img class="kakao-icon" src="{kakao_src}" alt="카카오맵" onerror="this.style.display='none'"> 카카오맵 API
                 </div>
                 <div class="data-source">
                     <span class="emoji-icon">🗄️</span> 로컬 DB
