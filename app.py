@@ -54,11 +54,20 @@ def sync_dark_mode():
 apply_custom_style(st.session_state.dark_mode) # 기존 스타일 함수 호출 유지
 
 def apply_premium_ui(is_dark):
-    # 공통 베이스 CSS (Pretendard 폰트, 트랜지션, 버튼 호버 효과)
+    # 공통 베이스 CSS (아이콘 깨짐 방지 타겟팅 최적화)
     base_css = """
 <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-    * { font-family: 'Pretendard', sans-serif !important; }
+    
+    /* 전체 선택자(*) 대신 특정 UI 컴포넌트만 정밀 타겟팅하여 내장 아이콘 깨짐 원천 차단 */
+    html, body, .stApp, p, h1, h2, h3, h4, h5, h6, label, button, input, textarea, [data-testid="stWidgetLabel"] { 
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important; 
+    }
+    
+    /* Streamlit 순정 Material 아이콘 컴포넌트 폰트 강제 복구 및 보호 */
+    span[data-testid="stIconMaterial"], i, .material-icons {
+        font-family: 'Material Symbols Outlined', 'Material Icons' !important;
+    }
     
     /* 입력창 디자인 */
     div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div {
@@ -160,7 +169,8 @@ def open_history_search_dialog():
 # 4. 사이드바 구성 (그룹화 및 깔끔한 정리)
 # ==========================================
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/2942/2942821.png", width=50) # 로고 예시
+    # 세련된 미니멀 라인 건축 아이콘으로 변경
+    st.image("https://cdn-icons-png.flaticon.com/512/1048/1048978.png", width=50)
     st.title("플랫폼 제어")
     
     # [인증 섹션]
@@ -273,11 +283,20 @@ if st.session_state.current_page == "main":
                 st.session_state.selected_index = None
                 st.rerun()
         else:
+            # 고급 아키텍처 실사 메인 비주얼 배너 적용
+            st.image(
+                "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop", 
+                use_container_width=True
+            )
+            
             # 빈 화면일 때 안내 문구 (Hero Section)
             st.markdown("""
-            <div style="text-align:center; padding: 40px; background: rgba(128,128,128,0.05); border-radius: 12px; margin-top: 20px;">
-                <h3 style="color: #0b459c;">어떤 규제를 검토해 드릴까요?</h3>
-                <p style="color: #666;">경기도/용인시 조례 및 125개 상위 법령 데이터베이스를 기반으로 정확하게 분석합니다.<br>하단의 입력창에 자유롭게 질문을 남겨주세요.</p>
+            <div style="text-align:center; padding: 30px; background: rgba(128,128,128,0.05); border-radius: 12px; margin-top: 15px;">
+                <h3 style="color: #0b459c; margin-bottom: 8px;">어떤 규제를 검토해 드릴까요?</h3>
+                <p style="color: #555; font-size: 14px; line-height: 1.6;">
+                    경기도/용인시 조례 및 125개 상위 법령 데이터베이스를 기반으로 정확하게 분석합니다.<br>
+                    하단의 통합 검색 인풋창에 질의하고 싶은 조례 및 구역을 자유롭게 남겨주세요.
+                </p>
             </div>
             """, unsafe_allow_html=True)
 
@@ -302,6 +321,13 @@ if st.session_state.current_page == "main":
 # --- 📝 2. 민원 양식 생성 ---
 elif st.session_state.current_page == "doc_gen":
     st.title("📝 맞춤형 건축 민원 양식 자동완성")
+    
+    # 업무용 오피스 룩앤필의 고급 모던 인테리어 실사 이미지 적용
+    st.image(
+        "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop",
+        use_container_width=True
+    )
+    
     st.info("💡 **Tip:** 복잡한 민원 내용을 입력하면 AI가 용인시 행정 양식에 맞춰 문서를 정갈하게 작성해 드립니다. (법령 검토는 챗봇을 이용해 주세요)")
     st.divider()
 
@@ -381,6 +407,13 @@ elif st.session_state.current_page == "doc_gen":
 # --- 💡 3. Q&A 게시판 ---
 elif st.session_state.current_page == "qna":
     st.title("💡 커뮤니티 Q&A")
+    
+    # 전문적이고 신뢰감 있는 데스크톱 회의/피드백 실사 이미지 추가
+    st.image(
+        "https://images.unsplash.com/photo-1455390582262-044cdead277a?q=80&w=2073&auto=format&fit=crop",
+        use_container_width=True
+    )
+    
     st.write("플랫폼 사용법이나 애매한 규제 해석에 대해 질문을 남겨주시면 관리자가 답변해 드립니다.")
     
     col1, col2 = st.columns([2, 1])
