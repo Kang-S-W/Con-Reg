@@ -52,10 +52,17 @@ def render_ai_report(response_text):
     # 4. 복사용 텍스트 준비
     copy_text = json.dumps(response_text, ensure_ascii=False)
 
-    # 5. [★ 핵심 수정: 복사 버튼 복구 및 경고 해결]
+    # 5. 답변 하단 버튼 영역: 복사 + 좋아요 + 싫어요
     # CSS의 '#' 기호가 URL을 깨뜨리지 않도록 안전하게 인코딩합니다.
     copy_button_html = f"""
-    <div style="text-align:right; height:34px; overflow:hidden;">
+    <div style="
+        display:flex;
+        align-items:center;
+        justify-content:flex-start;
+        gap:6px;
+        height:34px;
+        overflow:hidden;
+    ">
         <button id="copyBtn" style="
             border:1px solid #ccc;
             background:white;
@@ -65,7 +72,28 @@ def render_ai_report(response_text):
             font-size:14px;
             font-family: sans-serif;
         ">📋 복사</button>
+
+        <button type="button" style="
+            border:1px solid #ccc;
+            background:white;
+            border-radius:8px;
+            padding:4px 9px;
+            cursor:pointer;
+            font-size:14px;
+            font-family: sans-serif;
+        ">👍 좋아요</button>
+
+        <button type="button" style="
+            border:1px solid #ccc;
+            background:white;
+            border-radius:8px;
+            padding:4px 9px;
+            cursor:pointer;
+            font-size:14px;
+            font-family: sans-serif;
+        ">👎 싫어요</button>
     </div>
+
     <script>
     const text = {copy_text};
     const btn = document.getElementById("copyBtn");
@@ -82,13 +110,13 @@ def render_ai_report(response_text):
     }});
     </script>
     """
-    
-    # [수정 포인트] urllib.parse.quote를 사용하여 HTML 코드를 안전한 주소 형식으로 변환합니다.
-    encoded_html = urllib.parse.quote(copy_button_html)
-    st.iframe(f"data:text/html;charset=utf-8,{encoded_html}", height=45)
 
     # 6. 최종 답변 카드 출력 (기존 디자인 유지)
     st.markdown(
         f'<div class="report-card">{formatted_text}</div>',
         unsafe_allow_html=True
     )
+
+    # 7. 복사 / 좋아요 / 싫어요 버튼 출력: 답변 카드 아래 왼쪽 배치
+    encoded_html = urllib.parse.quote(copy_button_html)
+    st.iframe(f"data:text/html;charset=utf-8,{encoded_html}", height=45)
