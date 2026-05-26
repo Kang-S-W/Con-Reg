@@ -17,34 +17,71 @@ def handle_ai_analysis(user_query):
     [UI-백엔드 브릿지 함수]
     app.py에서 이 함수만 호출하면 분석, DB탐색, 결과 저장까지 한 번에 끝냅니다.
     """
-    # 1. 시맨틱 키워드 도출 (중요: 여기서 태그를 뽑아야 DB가 제13조를 찾습니다)
+    import streamlit as st
+    
+    # 1. 시맨틱 키워드 도출
     semantic_tags = get_semantic_keywords(user_query)
 
     # 2. DB 탐색 (status와 context 확보)
     db_status, db_context = get_ordinance_data(user_query, semantic_tags)
 
-    # 3. AI 응답 생성
+    # --- [추가된 로직: 과거 대화 맥락 추출 및 압축] ---
+    context_text = ""
+    
+    if "chat_history" in st.session_state and st.session_state.chat_history:
+        current_idx = st.session_state.get("selected_index")
+        
+        # 선택된 방이 없으면 가장 마지막 방을 참조
+        if current_idx is None:
+            current_idx = len(st.session_state.chat_history) - 1
+            
+        if 0 <= current_idx < len(st.session_state.chat_history):
+            messages = st.session_state.chat_history[current_idx].get("messages", [])
+            
+            # 최근 대화 5개 세트만 추출
+            recent_messages = messages[-5:] 
+            
+            if recent_messages:
+                context_text = "[이전 질의응답 맥락 시작]\n"
+                total_recent = len(recent_messages)
+                
+                for i, msg in enumerate(recent_messages):
+                    context_text += "민원인: " + msg.get("query", "") + "\n"
+                    ai_response = msg.get("response", "")
+                    
+                    # 차등 압축: 가장 최근 2개는 300자, 나머지 오래된 3개는 100자로 요약하여 토큰 방어
+                    if i >= total_recent - 2:
+                        if len(ai_response) > 300:
+                            ai_response = ai_response[:300] + "...(중략)..."
+                    else:
+                        if len(ai_response) > 100:
+                            ai_response = ai_response[:100] + "...(요약)..."
+                            
+                    context_text += "인공지능: " + ai_response + "\n\n"
+                context_text += "[이전 질의응답 맥락 종료]\n\n위 맥락을 바탕으로 아래의 새로운 질문에 일관성 있게 답변하십시오.\n\n"
+    # ----------------------------------------------------
+
+    # 맥락 데이터와 사용자의 새로운 질문을 하나로 결합
+    final_query_with_context = context_text + "새로운 질문: " + user_query
+
+    # 3. AI 응답 생성 (수정된 final_query_with_context 전달)
     response_text = get_gemini_response(
-        user_query=user_query,
+        user_query=final_query_with_context, # 결합된 텍스트를 전달
         db_status=db_status,
         db_context=db_context,
         semantic_tags=semantic_tags
     )
 
     # 4. 대화방 방식으로 저장
-    # 명시적으로 KST(한국 표준시)를 가져와서 문자열로 저장
     from datetime import datetime, timezone, timedelta
     kst_now = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d %H:%M:%S")
 
-    # chat_history가 없으면 빈 리스트 생성
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    # selected_index가 없으면 None으로 생성
     if "selected_index" not in st.session_state:
         st.session_state.selected_index = None
 
-    # 새 대화가 필요한 경우 (기존에 대화방이 없거나, 선택된 방이 없을 때)
     if st.session_state.selected_index is None or len(st.session_state.chat_history) == 0:
         new_chat = {
             "title": user_query[:20] + ("..." if len(user_query) > 20 else ""),
@@ -53,31 +90,25 @@ def handle_ai_analysis(user_query):
             "messages": []
         }
         st.session_state.chat_history.append(new_chat)
-        # 새로 만든 방을 현재 선택된 방으로 지정
         st.session_state.selected_index = len(st.session_state.chat_history) - 1
 
-    # 현재 선택된 대화방 찾기
     current_chat = st.session_state.chat_history[st.session_state.selected_index]
 
-    # 혹시 messages가 없으면 생성
     if "messages" not in current_chat:
         current_chat["messages"] = []
 
-   # 현재 대화방 안에 질문/답변 추가 (시간도 KST로)
+    # 화면과 기록에는 맥락이 안 보이도록 순수한 'user_query'만 저장
     current_chat["messages"].append({
-        "query": user_query,
+        "query": user_query, 
         "response": response_text,
         "time": kst_now
     })
 
-    # 마지막 업데이트 시간 갱신
     current_chat["updated_at"] = kst_now
 
-    # 💡 [수정] JSON 파일로 최종 저장 시 st.session_state.user_id를 함께 넘김
     save_history(st.session_state.chat_history, st.session_state.user_id)
 
     return response_text
-
 
 def fallback_civil_document(civil_type, site_address, civil_content):
     """
