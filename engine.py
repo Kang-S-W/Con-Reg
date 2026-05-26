@@ -119,8 +119,14 @@ def get_relevant_sitemap(user_query):
 
 def get_gemini_response(user_query, db_status, db_context, semantic_tags=""):
     """
-    [Step 2] 최종 답변 생성 (역질문 및 조건부 판단 추가)
+    [Step 2] 최종 답변 생성 (잠정적 답변 제공 및 단서 조항 추가)
     """
+    import streamlit as st
+    import requests
+    import json
+    import re
+    import time
+    
     MODEL_NAME = "gemini-2.5-flash" 
     api_key = st.secrets["GEMINI_API_KEY"]
     url = f"https://generativelanguage.googleapis.com/v1/models/{MODEL_NAME}:generateContent?key={api_key}"
@@ -145,10 +151,10 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags=""):
     3. '세부 해석'의 첫 문장은 반드시 다음과 같이 시작한다: {fallback_header if fallback_header else "확인된 법규 데이터를 바탕으로 상세 해석을 제공한다."}
     4. 당신이 보유한 모든 지식을 동원하여 실무적인 해답을 제공한다.
 
-    [역질문 및 조건부 판단 시스템]
-    1. (판단 기준) 제공된 [참조 데이터]의 법규 내용이 특정 조건(예: 용도지역, 대지 면적, 층수 등)에 따라 기준이 다르게 적용되는 분기형 조항인지 확인한다.
-    2. (역질문 발동) 사용자의 [질문]에 해당 조항을 확정 짓기 위한 '필수 조건'이 누락되어 있다면, 임의로 상황을 가정하여 확정적인 결론을 내리지 않는다.
-    3. (작성 방식) 이 경우, '세부 해석'의 마지막 부분에 "해당 조항은 [누락된 조건]에 따라 기준이 달라지므로, 대지의 [누락된 조건] 정보가 추가로 필요하다."라는 형태의 역질문을 덧붙여 민원인에게 추가 정보를 요구한다.
+    [조건부 답변 및 단서 조항 시스템]
+    1. (조건부 판단) 제공된 [참조 데이터]가 특정 조건(용도지역, 대지 면적, 층수 등)에 따라 기준이 다르게 적용되는 분기형 조항인지 확인한다.
+    2. (잠정적 답변 제공) 사용자의 [질문]에 필수 조건이 누락되어 있더라도 절대 답변을 거부하지 않는다. 확인 가능한 원칙, 가장 일반적인 기준, 또는 조건별 경우의 수를 요약하여 우선적으로 '결론'과 '세부 해석'을 온전하게 제공한다.
+    3. (안전장치 및 역질문) 답변을 제공한 후, '세부 해석'의 가장 마지막에 반드시 다음과 같은 형식의 단서 조항을 추가한다: "다만, 본 규정은 [누락된 조건]에 따라 적용 기준이 달라질 수 있다. 정확한 행정 해석을 위해 대상지의 [누락된 조건]을 추가로 제시하기 바란다."
 
     [참조 데이터]: {db_context}
     질문: {user_query}
