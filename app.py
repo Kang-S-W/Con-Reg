@@ -252,7 +252,7 @@ with st.sidebar:
         if st.button("🔍 검색", use_container_width=True):
             open_history_search_dialog()
 
-    st.subheader("📁 대화 이력")
+   st.subheader("대화 이력")
     history_container = st.container(height=250, border=True)
     with history_container:
         if st.session_state.chat_history:
@@ -261,12 +261,34 @@ with st.sidebar:
                 time_str = chat.get("updated_at", chat.get("created_at", "00-00 00:00"))[5:16]
                 query_summary = chat.get("title", "새 대화")[:12] + ".."
                 
-                if st.button(f"🕒 {time_str} | {query_summary}", key=f"hist_{actual_index}", use_container_width=True):
-                    st.session_state.selected_index = actual_index
-                    st.session_state.current_page = "main"
-                    st.rerun()
+                col_btn, col_del = st.columns([8, 2])
+                with col_btn:
+                    if st.button(f"조회 {time_str} | {query_summary}", key=f"hist_{actual_index}", use_container_width=True):
+                        st.session_state.selected_index = actual_index
+                        st.session_state.current_page = "main"
+                        st.rerun()
+                with col_del:
+                    if st.button("삭제", key=f"del_{actual_index}", use_container_width=True):
+                        st.session_state.chat_history.pop(actual_index)
+                        from storage import save_history
+                        save_history(st.session_state.chat_history, st.session_state.user_id)
+                        
+                        if st.session_state.selected_index == actual_index:
+                            st.session_state.selected_index = None
+                        elif st.session_state.selected_index is not None and st.session_state.selected_index > actual_index:
+                            st.session_state.selected_index -= 1
+                        st.rerun()
         else:
             st.caption("저장된 기록이 없습니다.")
+
+    if st.session_state.chat_history:
+        if st.button("전체 기록 삭제", type="primary", use_container_width=True):
+            st.session_state.chat_history = []
+            st.session_state.selected_index = None
+            from storage import clear_history
+            clear_history(st.session_state.user_id) 
+            st.toast("모든 기록이 삭제되었습니다.")
+            st.rerun()
 
     if st.session_state.chat_history:
         if st.button("🗑️ 전체 기록 삭제", type="primary", use_container_width=True):
