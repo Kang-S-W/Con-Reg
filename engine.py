@@ -207,5 +207,5 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags="", sta
         except: continue
         
     # 통신 실패 시 기본값 반환
-    return {"response_text": "시스템 엔진 응답 실패. 잠시 후 다시 시도해 주기 바랍니다. 100초 이내 응답이 실패했다면 질문 내용을 구체화하시기 바랍니다.", "updated_state": {}}
+    return {"response_text": "시스템 엔진 응답 실패. 잠시 후 다시 시도해 주기 바랍니다. 100초 이내 응답이 실패했다면 질문 내용을 쪼개거나 구체화하시기 바랍니다.", "updated_state": {}}
 
