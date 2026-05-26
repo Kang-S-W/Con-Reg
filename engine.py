@@ -117,7 +117,11 @@ def get_relevant_sitemap(user_query):
         
     return ""
 
+# 💡 [핵심 변경 1] 함수 인자에 state_context="" 추가
 def get_gemini_response(user_query, db_status, db_context, semantic_tags="", state_context=""):
+    """
+    [Step 2] 최종 답변 생성 (잠정적 답변 제공 및 단서 조항 추가 + 상태 기억소 연동)
+    """
     import streamlit as st
     import requests
     import json
@@ -126,86 +130,59 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags="", sta
     
     MODEL_NAME = "gemini-2.5-flash" 
     api_key = st.secrets["GEMINI_API_KEY"]
-    
-    # 시스템 내부적으로 슬래시 기호를 대체하여 URL을 구성함
-    url = f"https:{chr(47)}{chr(47)}generativelanguage.googleapis.com{chr(47)}v1{chr(47)}models{chr(47)}{MODEL_NAME}:generateContent?key={api_key}"
-    headers = {'Content-Type': f'application{chr(47)}json'}
+    url = f"https://generativelanguage.googleapis.com/v1/models/{MODEL_NAME}:generateContent?key={api_key}"
+    headers = {'Content-Type': 'application/json'}
     
     fallback_header = ""
     if db_status in ["INCOMPLETE", "NO_DATA"]:
         fallback_header = "현재 데이터베이스만으로는 정보 제공이 완료될 수 없어 일반 지식을 사용하여 답변한다."
 
-    # 1. 인공지능 프롬프트 수정: updated_state 항목을 완전히 유동적인 구조로 개조함
     prompt = f"""
     당신은 대한민국 건축 행정 전문가다. 아래 지침을 엄격히 준수하여 보고서를 작성한다.
 
     [절대 금지 사항]
-    - "제공된 데이터베이스에는 가 있다 없다"라는 말을 절대 하지 않는다.
-    - 시스템 내부 자료의 범위를 설명하는 문단을 만들지 않는다.
+    - "제공된 데이터베이스에는 ~가 있다 없다"라는 말을 절대 하지 않는다.
+    - 시스템 내부 자료의 범위를 설명하거나 한계를 요약하는 문단을 만들지 않는다.
     - 영어 번역이나 괄호 병기 표기를 제목 및 소제목에 포함하지 않는다.
-    - 별표나 슬래시 기호를 절대 사용하지 않는다.
+    - [참조 데이터]와 같은 기술 용어를 본문에 노출하지 않는다.
 
-    [출력 형식]
-    반드시 아래 JSON 형식으로만 반환한다. 다른 말은 덧붙이지 않는다.
-    {{
-        "response_text": "결론, 핵심 근거, 세부 해석이 포함된 최종 답변 내용",
-        "updated_state": {{
-            "항목명(예: 용도지역, 건폐율, 층수, 연면적 등)": "추출된 구체적인 값"
-        }}
-    }}
-    
-    [상태 저장소 추출 지침]
-    - updated_state 내부의 항목은 고정되어 있지 않다.
-    - 대화 맥락과 사용자의 질문을 분석하여, 새롭게 파악되거나 갱신할 필요가 있는 '건축 및 토지 관련 모든 제원 정보'를 유동적인 키-값 쌍으로 전부 추출한다.
-    - 만약 새롭게 추가하거나 변경할 제원 정보가 없다면 빈 객체인 {{}} 를 반환한다.
+    [작성 가이드]
+    1. 서술어는 반드시 '~다', '~한다' 형태의 객관적인 문서체로 끝맺는다.
+    2. 제목은 ### 결론, ### 핵심 근거, ### 세부 해석 3개 항목만 사용한다.
+    3. '세부 해석'의 첫 문장은 반드시 다음과 같이 시작한다: {fallback_header if fallback_header else "확인된 법규 데이터를 바탕으로 상세 해석을 제공한다."}
+    4. 당신이 보유한 모든 지식을 동원하여 실무적인 해답을 제공한다.
 
     [조건부 답변 및 단서 조항 시스템]
-    1. 조건부 판단: 제공된 참조 데이터가 특정 조건에 따라 다르게 적용되는 분기형 조항인지 확인한다.
-    2. 잠정적 답변 제공: 조건이 누락되어도 답변을 거부하지 않고 일반적인 기준을 제공한다.
-    3. 안전장치: 세부 해석 마지막에 누락된 조건을 묻는 단서 조항을 추가한다.
+    1. (조건부 판단) 제공된 [참조 데이터]가 특정 조건(용도지역, 대지 면적, 층수 등)에 따라 기준이 다르게 적용되는 분기형 조항인지 확인한다.
+    2. (잠정적 답변 제공) 사용자의 [질문]에 필수 조건이 누락되어 있더라도 절대 답변을 거부하지 않는다. 확인 가능한 원칙, 가장 일반적인 기준, 또는 조건별 경우의 수를 요약하여 우선적으로 '결론'과 '세부 해석'을 온전하게 제공한다.
+    3. (안전장치 및 역질문) 답변을 제공한 후, '세부 해석'의 가장 마지막에 반드시 다음과 같은 형식의 단서 조항을 추가한다: "다만, 본 규정은 [누락된 조건]에 따라 적용 기준이 달라질 수 있다. 정확한 행정 해석을 위해 대상지의 [누락된 조건]을 추가로 제시하기 바란다."
 
-    {state_context}
+    {state_context}  # 💡 [핵심 변경 2] 프로세서에서 넘겨받은 상태 기억소 데이터를 여기에 강제 주입
 
     [참조 데이터]: {db_context}
     질문: {user_query}
     """
     
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "responseMimeType": f"application{chr(47)}json"
-        }
-    }
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
     
     for i in range(5):
         try:
             res = requests.post(url, headers=headers, data=json.dumps(payload), timeout=100)
             if res.status_code == 200:
-                result_json = res.json()['candidates'][0]['content']['parts'][0]['text']
-                parsed_data = json.loads(result_json)
-                
-                # 2. 텍스트 정제 작업 (기존 로직 유지)
-                text = parsed_data.get("response_text", "")
-                text = re.sub(r"\[.+?\]", "", text)
-                text = text.replace(chr(42), "").replace(chr(47), "")
+                text = res.json()['candidates'][0]['content']['parts'][0]['text']
+                text = re.sub(r"\[.*?\]", "", text)
+                text = text.replace("*", "").replace("/", "")
                 
                 meta_trash = ["제공된 데이터베이스", "법령 자료는", "포함하고 있지 않습니다", "확인할 수 없습니다"]
                 for trash in meta_trash:
                     text = text.replace(trash, "")
-                    
-                final_text = apply_law_links(text.strip())
+                
+                processed_text = text.strip()
+                
+                final_text = apply_law_links(processed_text)
                 sitemap_text = get_relevant_sitemap(user_query)
                 
-                parsed_data["response_text"] = final_text + sitemap_text
-                
-                # 3. 각주: 여기서 추출된 parsed_data["updated_state"]는 
-                # processor.py로 통째로 전달되어, 기존 딕셔너리에 동적으로 update(병합) 됨.
-                # 예: {"건축면적": "500", "도로너비": "4m"} 가 전달되면 기존 상태에 항목이 알아서 추가됨.
-                
-                return parsed_data
+                return final_text + sitemap_text
             time.sleep(2)
         except: continue
-        
-    # 통신 실패 시 기본값 반환
-    return {"response_text": "시스템 엔진 응답 실패. 잠시 후 다시 시도해 주기 바랍니다. 100초 이내 응답이 실패했다면 질문 내용을 쪼개거나 구체화하시기 바랍니다.", "updated_state": {}}
-
+    return "시스템 엔진 응답 실패. 잠시 후 다시 시도해 주기 바랍니다. 응답가능시간인 100초 이내 실패시 질문 내용을 구체화하시기 바랍니다"
