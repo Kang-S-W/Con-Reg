@@ -337,24 +337,42 @@ if st.session_state.current_page == "main":
                     st.error(f"오류가 발생했습니다: {str(e)}")
             st.rerun()
 
-    with col_state:
+   with col_state:
         st.subheader("상태 기억소")
-        st.caption("인공지능이 파악한 민원 정보. 표를 클릭해 직접 수정할 수 있다.")
+        st.caption("파악된 대지 및 건축물 조건으로, 답변에 반영됩니다. 직접 추가하거나 수정하실 수 있습니다.")
 
         if current_chat is not None:
-            edited_state = st.data_editor(
-                current_state,
+            # 딕셔너리를 편집 가능한 판다스 데이터프레임 구조로 변환
+            import pandas as pd
+            
+            if not current_state:
+                df_state = pd.DataFrame(columns=["항목", "내용"])
+            else:
+                df_state = pd.DataFrame(list(current_state.items()), columns=["항목", "내용"])
+
+            # 사용자가 표 형식으로 직관적으로 편집할 수 있도록 에디터 가동
+            edited_df = st.data_editor(
+                df_state,
                 num_rows="dynamic",
                 use_container_width=True,
+                hide_index=True,
                 key=f"state_editor_{st.session_state.selected_index}"
             )
 
-            if edited_state != current_state:
-                current_chat["state"] = edited_state
+            # 편집된 데이터프레임을 다시 딕셔너리로 압축하여 시스템에 반영
+            new_state = {}
+            for _, row in edited_df.iterrows():
+                key_val = str(row["항목"]).strip() if pd.notna(row["항목"]) else ""
+                val_val = str(row["내용"]).strip() if pd.notna(row["내용"]) else ""
+                if key_val and key_val != "nan":
+                    new_state[key_val] = val_val
+
+            if new_state != current_state:
+                current_chat["state"] = new_state
                 save_history(st.session_state.chat_history, st.session_state.user_id)
                 st.rerun()
         else:
-            st.info("새 대화를 시작하면 상태 기억소가 활성화된다.")
+            st.info("새 대화를 시작하면 상태 기억소가 초기화됩니다.")
             
 # --- 📝 2. 민원 양식 생성 ---
 elif st.session_state.current_page == "doc_gen":
