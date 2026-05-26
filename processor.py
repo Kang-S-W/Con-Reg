@@ -1,4 +1,48 @@
-json_match = re.search(r'\{.*\}', result, re.DOTALL)
+# processor.py
+from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
+import streamlit as st
+import requests
+import json
+import time
+import re
+
+from engine import get_semantic_keywords, get_gemini_response
+from database import get_ordinance_data
+from storage import save_history
+
+
+def get_gemini_state_update(query, response, current_state):
+    import json
+    import re
+    import requests
+    import streamlit as st
+
+    MODEL_NAME = "gemini-2.5-flash"
+    api_key = st.secrets["GEMINI_API_KEY"]
+    url = f"https:__generativelanguage.googleapis.com_v1_models_{MODEL_NAME}:generateContent?key={api_key}".replace("_", chr(47))
+    
+    prompt = f"""
+    당신은 건축 및 토지 정보 데이터 추출기다.
+    사용자의 질문과 인공지능의 답변을 분석하여, 토지 및 건축물과 관련된 핵심 제원만 추출한다.
+    추출 대상: 용도지역, 지구, 대지면적, 건축면적, 연면적, 건폐율, 용적률, 지목, 층수, 도로 너비 등
+    쓸데없는 대화나 인사말, 관련 없는 정보는 절대 저장하지 않는다.
+
+    [현재 저장된 상태]: {json.dumps(current_state, ensure_ascii=False)}
+    [사용자 질문]: {query}
+    [AI 답변]: {response}
+
+    위 내용을 바탕으로 새롭게 파악되거나 변경된 건축 토지 제원이 있다면 기존 상태를 업데이트하여 완성된 단일 JSON 객체로 출력한다.
+    출력 예시: {{"용도지역": "준주거지역", "대지면적": "8000m^2"}}
+    오직 JSON 객체 형태만 출력하고 다른 말은 절대 덧붙이지 마라.
+    """
+    
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
+    try:
+        res = requests.post(url, headers={'Content-Type': 'application_json'.replace("_", chr(47))}, data=json.dumps(payload), timeout=15)
+        if res.status_code == 200:
+            result = res.json()['candidates'][0]['content']['parts'][0]['text'].strip()
+            json_match = re.search(r'\{.*\}', result, re.DOTALL)
             if json_match:
                 return json.loads(json_match.group())
     except:
@@ -7,6 +51,13 @@ json_match = re.search(r'\{.*\}', result, re.DOTALL)
 
 
 def handle_ai_analysis(user_query):
+    """
+    [수정된 함수] 질의 복원 알고리즘 + 상태 기억소(State Storage) 통합 버전
+    """
+    import streamlit as st
+    import requests
+    import json
+    
     kst_now = (datetime.now(timezone.utc) + timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
 
     # 1. 채팅 기록 세션 초기화 및 상태 기억소 신설
@@ -22,7 +73,7 @@ def handle_ai_analysis(user_query):
             "created_at": kst_now,
             "updated_at": kst_now,
             "messages": [],
-            "state": {}
+            "state": {} # 💡 상태 기억소 초기화
         }
         st.session_state.chat_history.append(new_chat)
         st.session_state.selected_index = len(st.session_state.chat_history) - 1
@@ -33,9 +84,9 @@ def handle_ai_analysis(user_query):
         current_chat["messages"] = []
     
     if "state" not in current_chat:
-        current_chat["state"] = {}
+        current_chat["state"] = {} # 💡 기존 대화방에도 상태 기억소 강제 할당
 
-    # 2. 대화 맥락 텍스트 추출
+    # 2. 대화 맥락 텍스트 추출 (기존 로직 유지)
     context_text = ""
     messages = current_chat.get("messages", [])
     recent_messages = messages[-5:] 
@@ -58,19 +109,18 @@ def handle_ai_analysis(user_query):
             context_text += "인공지능: " + ai_response + "\n\n"
         context_text += "[이전 질의응답 맥락 종료]\n\n"
 
-    # 3. 질의 복원 알고리즘 가동
+    # 3. 질의 복원 알고리즘 가동 (기존 로직 유지)
     search_query = user_query
     if context_text:
         try:
             MODEL_NAME = "gemini-2.5-flash"
             api_key = st.secrets["GEMINI_API_KEY"]
-            # 오타 수정: 자동 완성된 마크다운 기호 제거
-            url = f"[https://generativelanguage.googleapis.com/v1/models/](https://generativelanguage.googleapis.com/v1/models/){MODEL_NAME}:generateContent?key={api_key}"
+            url = f"https:__generativelanguage.googleapis.com_v1_models_{MODEL_NAME}:generateContent?key={api_key}".replace("_", chr(47))
             
-            rewrite_prompt = context_text + f"위 대화 맥락을 고려할 때 다음 질문이 생략된 단어가 있다면 완전한 문장으로 다시 작성하라. 질문: {user_query}"
+            rewrite_prompt = context_text + f"위 대화 맥락을 고려할 때 다음 사용자의 질문이 생략된 단어가 있는 불완전한 문장이라면 맥락을 포함한 완전한 하나의 질문으로 다시 작성하고 이미 완전한 문장이라면 원본 그대로 출력하라. 다른 부가적인 말은 절대 덧붙이지 마라. 질문: {user_query}"
             
             payload = {"contents": [{"parts": [{"text": rewrite_prompt}]}]}
-            headers = {"Content-Type": "application/json"}
+            headers = {"Content-Type": "application_json".replace("_", chr(47))}
             
             res = requests.post(url, headers=headers, data=json.dumps(payload), timeout=10)
             if res.status_code == 200:
@@ -83,17 +133,21 @@ def handle_ai_analysis(user_query):
     # 4. 상태 프롬프트 주입 준비
     current_state = current_chat["state"]
     if current_state:
-        state_context = f"[현재 확정된 대지 제원]: {json.dumps(current_state, ensure_ascii=False)}\n위 정보를 전제로 법규를 해석할 것."
+        state_context = f"[현재까지 확정된 민원인 건축 정보 상태]: {json.dumps(current_state, ensure_ascii=False)}\n위 정보를 기본 전제로 하여 법규를 해석할 것."
     else:
         state_context = ""
 
     # 5. DB 탐색 및 인공지능 응답 호출
+    from engine import get_semantic_keywords, get_gemini_response
+    from database import get_ordinance_data
+    from storage import save_history
+
     semantic_tags = get_semantic_keywords(search_query)
     db_status, db_context = get_ordinance_data(search_query, semantic_tags)
 
     final_query_with_context = context_text + "새로운 질문: " + user_query
 
-    # 1차 호출: 행정 문서 텍스트만 안전하게 생성 (문자열 반환)
+    # 💡 engine.py에 새로 추가한 state_context 인자 전달
     response_text = get_gemini_response(
         user_query=final_query_with_context, 
         db_status=db_status,
@@ -102,12 +156,9 @@ def handle_ai_analysis(user_query):
         state_context=state_context 
     )
 
-    # 2차 호출: 위에서 완성된 답변을 토대로 상태 JSON 추출
-    updated_state = get_gemini_state_update(user_query, response_text, current_state)
-
     # 6. 답변 완료 후 상태 데이터 능동 갱신
-    if updated_state and isinstance(updated_state, dict):
-        current_chat["state"].update(updated_state)
+    updated_state = get_gemini_state_update(user_query, response_text, current_state)
+    current_chat["state"] = updated_state # 세션에 갱신된 JSON 덮어쓰기
 
     # 7. 기록 저장
     current_chat["messages"].append({
@@ -185,9 +236,7 @@ def llm_invoke_function(system_prompt, user_prompt, civil_type, site_address, ci
     try:
         MODEL_NAME = "gemini-2.5-flash"
         api_key = st.secrets["GEMINI_API_KEY"]
-        
-        # 오타 수정: 자동 완성된 마크다운 기호 제거
-        url = f"[https://generativelanguage.googleapis.com/v1/models/](https://generativelanguage.googleapis.com/v1/models/){MODEL_NAME}:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1/models/{MODEL_NAME}:generateContent?key={api_key}"
         headers = {"Content-Type": "application/json"}
 
         prompt = f"""
