@@ -337,7 +337,7 @@ if st.session_state.current_page == "main":
                     st.error(f"오류가 발생했습니다: {str(e)}")
             st.rerun()
 
-   with col_state:
+with col_state:
         st.subheader("상태 기억소")
         st.caption("인공지능이 파악한 대지 및 건축물 제원. 표를 클릭해 직접 추가하거나 수정할 수 있다.")
 
