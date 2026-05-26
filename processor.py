@@ -13,30 +13,35 @@ from storage import save_history
 
 
 def get_gemini_state_update(query, response, current_state):
-    """
-    [추가된 함수] 대화 내용에서 핵심 상태 정보를 추출하여 JSON 형태로 갱신하는 독립 엔진
-    """
+    import json
+    import re
+    import requests
+    import streamlit as st
+
     MODEL_NAME = "gemini-2.5-flash"
     api_key = st.secrets["GEMINI_API_KEY"]
-    url = f"https://generativelanguage.googleapis.com/v1/models/{MODEL_NAME}:generateContent?key={api_key}"
+    url = f"https:__generativelanguage.googleapis.com_v1_models_{MODEL_NAME}:generateContent?key={api_key}".replace("_", chr(47))
     
     prompt = f"""
-    이전 상태: {json.dumps(current_state, ensure_ascii=False)}
-    민원인 질문: {query}
-    AI 답변: {response}
-    
-    대화에서 언급된 '토지 위치(주소), 대지면적, 건축면적, 용도지역, 지목, 건물 용도, 층수' 등의 
-    건축 및 토지 관련 핵심 상태 정보를 추출하여 이전 상태와 합친 최신 상태를 JSON으로 출력한다. 
-    만약 새로 추가되거나 변경된 정보가 없다면 이전 상태를 그대로 반환한다.
+    당신은 건축 및 토지 정보 데이터 추출기다.
+    사용자의 질문과 인공지능의 답변을 분석하여, 토지 및 건축물과 관련된 핵심 제원만 추출한다.
+    추출 대상: 용도지역, 지구, 대지면적, 건축면적, 연면적, 건폐율, 용적률, 지목, 층수, 도로 너비 등
+    쓸데없는 대화나 인사말, 관련 없는 정보는 절대 저장하지 않는다.
+
+    [현재 저장된 상태]: {json.dumps(current_state, ensure_ascii=False)}
+    [사용자 질문]: {query}
+    [AI 답변]: {response}
+
+    위 내용을 바탕으로 새롭게 파악되거나 변경된 건축 토지 제원이 있다면 기존 상태를 업데이트하여 완성된 단일 JSON 객체로 출력한다.
+    출력 예시: {{"용도지역": "준주거지역", "대지면적": "8000m^2"}}
     오직 JSON 객체 형태만 출력하고 다른 말은 절대 덧붙이지 마라.
     """
     
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
     try:
-        res = requests.post(url, headers={'Content-Type': 'application/json'}, data=json.dumps(payload), timeout=15)
+        res = requests.post(url, headers={'Content-Type': 'application_json'.replace("_", chr(47))}, data=json.dumps(payload), timeout=15)
         if res.status_code == 200:
             result = res.json()['candidates'][0]['content']['parts'][0]['text'].strip()
-            # 마크다운 코드블록이나 불필요한 텍스트 제거하고 순수 JSON만 추출
             json_match = re.search(r'\{.*\}', result, re.DOTALL)
             if json_match:
                 return json.loads(json_match.group())
