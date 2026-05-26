@@ -13,32 +13,20 @@ from storage import save_history
 
 
 def handle_ai_analysis(user_query):
-    """
-    [UI-백엔드 브릿지 함수]
-    app.py에서 이 함수만 호출하면 분석, DB탐색, 결과 저장까지 한 번에 끝냅니다.
-    """
     import streamlit as st
+    import requests
+    import json
     
-    # 1. 시맨틱 키워드 도출
-    semantic_tags = get_semantic_keywords(user_query)
-
-    # 2. DB 탐색 (status와 context 확보)
-    db_status, db_context = get_ordinance_data(user_query, semantic_tags)
-
-    # --- [추가된 로직: 과거 대화 맥락 추출 및 압축] ---
     context_text = ""
     
     if "chat_history" in st.session_state and st.session_state.chat_history:
         current_idx = st.session_state.get("selected_index")
         
-        # 선택된 방이 없으면 가장 마지막 방을 참조
         if current_idx is None:
             current_idx = len(st.session_state.chat_history) - 1
             
         if 0 <= current_idx < len(st.session_state.chat_history):
             messages = st.session_state.chat_history[current_idx].get("messages", [])
-            
-            # 최근 대화 5개 세트만 추출
             recent_messages = messages[-5:] 
             
             if recent_messages:
@@ -49,7 +37,6 @@ def handle_ai_analysis(user_query):
                     context_text += "민원인: " + msg.get("query", "") + "\n"
                     ai_response = msg.get("response", "")
                     
-                    # 차등 압축: 가장 최근 2개는 300자, 나머지 오래된 3개는 100자로 요약하여 토큰 방어
                     if i >= total_recent - 2:
                         if len(ai_response) > 300:
                             ai_response = ai_response[:300] + "...(중략)..."
@@ -58,23 +45,50 @@ def handle_ai_analysis(user_query):
                             ai_response = ai_response[:100] + "...(요약)..."
                             
                     context_text += "인공지능: " + ai_response + "\n\n"
-                context_text += "[이전 질의응답 맥락 종료]\n\n위 맥락을 바탕으로 아래의 새로운 질문에 일관성 있게 답변하십시오.\n\n"
-    # ----------------------------------------------------
+                context_text += "[이전 질의응답 맥락 종료]\n\n"
 
-    # 맥락 데이터와 사용자의 새로운 질문을 하나로 결합
+    # 질의 복원 알고리즘 가동
+    search_query = user_query
+    
+    if context_text:
+        try:
+            MODEL_NAME = "gemini-2.5-flash"
+            api_key = st.secrets["GEMINI_API_KEY"]
+            url = f"https:__generativelanguage.googleapis.com_v1_models_{MODEL_NAME}:generateContent?key={api_key}".replace("_", chr(47))
+            
+            rewrite_prompt = context_text + f"위 대화 맥락을 고려할 때 다음 사용자의 질문이 생략된 단어가 있는 불완전한 문장이라면 맥락을 포함한 완전한 하나의 질문으로 다시 작성하고 이미 완전한 문장이라면 원본 그대로 출력하라. 다른 부가적인 말은 절대 덧붙이지 마라. 질문: {user_query}"
+            
+            payload = {"contents": [{"parts": [{"text": rewrite_prompt}]}]}
+            headers = {"Content-Type": "application_json".replace("_", chr(47))}
+            
+            res = requests.post(url, headers=headers, data=json.dumps(payload), timeout=10)
+            if res.status_code == 200:
+                rewritten = res.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+                if rewritten:
+                    search_query = rewritten
+        except Exception:
+            pass
+
+    # 시맨틱 키워드 도출 및 데이터베이스 탐색 시 복원된 문장 사용
+    from engine import get_semantic_keywords, get_gemini_response
+    from database import get_ordinance_data
+    from storage import save_history
+
+    semantic_tags = get_semantic_keywords(search_query)
+    db_status, db_context = get_ordinance_data(search_query, semantic_tags)
+
     final_query_with_context = context_text + "새로운 질문: " + user_query
 
-    # 3. AI 응답 생성 (수정된 final_query_with_context 전달)
+    # 최종 응답 생성
     response_text = get_gemini_response(
-        user_query=final_query_with_context, # 결합된 텍스트를 전달
+        user_query=final_query_with_context, 
         db_status=db_status,
         db_context=db_context,
         semantic_tags=semantic_tags
     )
 
-    # 4. 대화방 방식으로 저장
     from datetime import datetime, timezone, timedelta
-    kst_now = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d %H:%M:%S")
+    kst_now = (datetime.now(timezone.utc) + timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
 
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
@@ -97,7 +111,6 @@ def handle_ai_analysis(user_query):
     if "messages" not in current_chat:
         current_chat["messages"] = []
 
-    # 화면과 기록에는 맥락이 안 보이도록 순수한 'user_query'만 저장
     current_chat["messages"].append({
         "query": user_query, 
         "response": response_text,
