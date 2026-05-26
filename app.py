@@ -361,7 +361,7 @@ if st.session_state.current_page == "main":
 
     # 기존 메인화면 if 블록의 내부이므로 4칸 들여쓰기 유지
     with col_state:
-        st.subheader("상태 기억소")
+        st.subheader("상태 저장소")
         st.caption("파악된 대지 및 건축물의 상태값으로, 답변에 참조됩니다. 직접 추가하거나 수정하실 수 있습니다.")
 
         if current_chat is not None:
@@ -392,7 +392,7 @@ if st.session_state.current_page == "main":
                 save_history(st.session_state.chat_history, st.session_state.user_id)
                 st.rerun()
         else:
-            st.info("상태 기억소는 대화창별로 저장됩니다.")
+            st.info("상태 저장소는 대화창별로 저장됩니다.")
             
            
 # --- 📝 2. 민원 양식 생성 ---
