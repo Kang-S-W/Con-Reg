@@ -370,7 +370,7 @@ if st.session_state.current_page == "main":
                 save_history(st.session_state.chat_history, st.session_state.user_id)
                 st.rerun()
         else:
-            st.info("새 대화를 시작하면 건축 제원 전용 상태 기억소가 초기화됩니다.")
+            st.info("상태 기억소는 대화창별로 저장됩니다.")
             
            
 # --- 📝 2. 민원 양식 생성 ---
