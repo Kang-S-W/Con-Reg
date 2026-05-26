@@ -15,11 +15,8 @@ def load_all_databases():
     return {f: df.fillna("") for f in db_files if os.path.exists(f) and (df := safe_read_csv(f)) is not None}
 
 def extract_smart_snip(text, query, semantic_tags=""):
-    """
-    조문 번호와 실무 키워드 밀도를 계산해 가장 가치 있는 조문을 우선 추출합니다.
-    """
     if not text: return ""
-    pattern = r"(제\d+조(?:의\d+)?\s*\(.*?\))"
+    pattern = r"(제\d+조(?:의\d+)?\s*\([^)]*\))"
     sections = re.split(pattern, text)
     articles = []
     if len(sections) > 1:
@@ -28,7 +25,6 @@ def extract_smart_snip(text, query, semantic_tags=""):
     else: return text[:1500]
 
     keywords = [kw for kw in set(query.split() + semantic_tags.split(',')) if len(kw) > 1]
-    # '목적', '정의' 보다는 구체적 실무 단어에 가중치
     priority_kws = [k for k in keywords if k not in ["법", "조례", "목적", "정의"]]
 
     scored_articles = []
@@ -40,27 +36,42 @@ def extract_smart_snip(text, query, semantic_tags=""):
     return "\n\n".join([art for _, art in scored_articles[:3]]) if scored_articles else articles[0][:1000]
 
 def get_ordinance_data(query, semantic_tags=""):
-    """
-    [범용 해결책] 특정 점수 도달 시에도 '법령(Statute)' 및 '차용법규'는 
-    반드시 전수 조사하도록 탐색 로직을 강화했습니다.
-    """
     dbs = load_all_databases()
+    
+    known_laws = set()
+    for f_name, df in dbs.items():
+        name_col = "ordinance (조례명)" if "ordinance" in f_name else "Ordinance(법규명)"
+        if name_col in df.columns:
+            known_laws.update(df[name_col].dropna().unique().tolist())
+            
+    known_laws_sorted = sorted(list(known_laws), key=len, reverse=True)
+    target_law_name = None
+    query_no_space = query.replace(" ", "")
+    
+    for law in known_laws_sorted:
+        if str(law).replace(" ", "") in query_no_space:
+            target_law_name = str(law)
+            break
+
     tags_list = [t.strip() for t in semantic_tags.split(',') if t.strip()]
     combined_keywords = [kw for kw in set(query.split() + tags_list) if len(kw) > 1]
     
+    if target_law_name:
+        combined_keywords.append(target_law_name)
+
     final_context, processed_sources, total_density_score = [], set(), 0
-    # 정보 밀도 목표치 (이 수치가 넘어도 핵심 파일은 계속 탐색함)
     SATISFACTION_THRESHOLD = 35 
 
     tier_configs = [
         {"label": "조례 핵심", "file": "ordinance_basic.csv", "keywords": ["용인", "건축 조례"]},
         {"label": "위임법령", "file": "statute.csv", "all": True},
-        {"label": "차용/연관법규", "file": ["stat_borrowed.csv", "ord_borrowed.csv"], "all": True}
+        {"label": "차용 연관법규", "file": ["stat_borrowed.csv", "ord_borrowed.csv"], "all": True}
     ]
 
     for tier in tier_configs:
-        # 핵심 조례 탐색 중 점수가 찼다면 넘어가지만, '위임법령'과 '차용법규'는 무조건 수행
-        if total_density_score >= SATISFACTION_THRESHOLD and tier['label'] == "조례 핵심":
+        is_core_tier = (tier['label'] == "조례 핵심")
+        
+        if total_density_score >= SATISFACTION_THRESHOLD and is_core_tier:
             continue
             
         files = [tier["file"]] if isinstance(tier["file"], str) else tier["file"]
@@ -70,21 +81,24 @@ def get_ordinance_data(query, semantic_tags=""):
             name_col = "ordinance (조례명)" if "ordinance" in f_name else "Ordinance(법규명)"
             content_col = "content" if "content" in df.columns else "Content(원문)"
             
-            # 티어별 매칭 수행
             for _, row in df.iterrows():
                 name = str(row[name_col])
                 if name in processed_sources: continue
+                
+                if target_law_name and is_core_tier:
+                    if target_law_name in df[name_col].values and name != target_law_name:
+                        continue
+
                 content = str(row[content_col])
                 
-                # 키워드 매칭 시 스니펫 추출
                 if any(kw in name or kw in content for kw in combined_keywords):
                     snip = extract_smart_snip(content, query, semantic_tags)
                     if len(snip) > 30:
                         final_context.append(f"### [{tier['label']}] {name}\n{snip}")
                         processed_sources.add(name)
-                        total_density_score += 15 # 조문 발견 시 가중치
+                        total_density_score += 15 
                     
-                    if total_density_score >= 80: break # 과부하 방지용 하드 리밋
+                    if total_density_score >= 80: break 
     
     status = "COMPLETE" if total_density_score >= SATISFACTION_THRESHOLD else "INCOMPLETE"
     return status, "\n\n---\n\n".join(final_context)
@@ -101,18 +115,15 @@ def load_law_links():
                     links = {}
                     for k, v in zip(df['법규명'], df['원문링크']):
                         url = str(v).strip()
-                        # [핵심] 주소가 www로 시작하면 https://를 강제로 붙임
                         if url.startswith("www."):
-                            url = "https://" + url
-                        links[str(k).strip()] = url
+                            url = "https:__" + url
+                        links[str(k).strip()] = url.replace("_", chr(47))
                     return links
             except: continue
     return {}
 
-#용인시청 사이트맵 기능 추
 @st.cache_data
 def load_sitemap_db():
-    """용인시청 사이트맵 DB 로드"""
     path = "용인시청사이트맵.csv"
     if os.path.exists(path):
         for enc in ['utf-8-sig', 'cp949', 'utf-8', 'euc-kr']:
