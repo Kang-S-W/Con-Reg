@@ -252,7 +252,7 @@ with st.sidebar:
         if st.button("🔍 검색", use_container_width=True):
             open_history_search_dialog()
 
-   st.subheader("대화 이력")
+    st.subheader("대화 이력")
     history_container = st.container(height=250, border=True)
     with history_container:
         if st.session_state.chat_history:
