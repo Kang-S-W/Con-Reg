@@ -319,10 +319,12 @@ if st.session_state.current_page == "main":
             current_chat = None
             current_state = {}
 
-        # 신규 추가: 상태 저장소 표시 여부를 결정하는 토글 스위치
-        show_state_panel = st.toggle("상태 저장소 패널 켜기", value=True)
+        # 💡 개선 구조: 상단에 3대1 비율의 레이아웃을 생성하여 토글 버튼을 우측 패널 위로 강제 정렬
+        col_top_left, col_top_right = st.columns([3, 1])
+        with col_top_right:
+            show_state_panel = st.toggle("상태 저장소 패널 켜기", value=True)
 
-        # 토글 상태에 따른 동적 화면 분할
+        # 토글 상태에 따른 메인 화면 동적 분할
         if show_state_panel:
             col_chat, col_state = st.columns([3, 1])
         else:
