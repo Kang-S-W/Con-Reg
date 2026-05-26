@@ -337,12 +337,12 @@ if st.session_state.current_page == "main":
                     st.error(f"오류가 발생했습니다: {str(e)}")
             st.rerun()
 
-with col_state:
+    # 기존 메인화면 if 블록의 내부이므로 4칸 들여쓰기 유지
+    with col_state:
         st.subheader("상태 기억소")
         st.caption("인공지능이 파악한 대지 및 건축물 제원. 표를 클릭해 직접 추가하거나 수정할 수 있다.")
 
         if current_chat is not None:
-            # 딕셔너리를 편집 가능한 판다스 데이터프레임 구조로 변환
             import pandas as pd
             
             if not current_state:
@@ -350,7 +350,6 @@ with col_state:
             else:
                 df_state = pd.DataFrame(list(current_state.items()), columns=["항목", "내용"])
 
-            # 사용자가 표 형식으로 직관적으로 편집할 수 있도록 에디터 가동
             edited_df = st.data_editor(
                 df_state,
                 num_rows="dynamic",
@@ -359,7 +358,6 @@ with col_state:
                 key=f"state_editor_{st.session_state.selected_index}"
             )
 
-            # 편집된 데이터프레임을 다시 딕셔너리로 압축하여 시스템에 반영
             new_state = {}
             for _, row in edited_df.iterrows():
                 key_val = str(row["항목"]).strip() if pd.notna(row["항목"]) else ""
@@ -374,6 +372,7 @@ with col_state:
         else:
             st.info("새 대화를 시작하면 건축 제원 전용 상태 기억소가 활성화된다.")
             
+           
 # --- 📝 2. 민원 양식 생성 ---
 elif st.session_state.current_page == "doc_gen":
     st.title("📝 맞춤형 건축 민원 양식 자동완성")
