@@ -158,7 +158,8 @@ def handle_ai_analysis(user_query):
 
     # 6. 답변 완료 후 상태 데이터 능동 갱신
     updated_state = get_gemini_state_update(user_query, response_text, current_state)
-    current_chat["state"] = updated_state # 세션에 갱신된 JSON 덮어쓰기
+    if updated_state and isinstance(updated_state, dict):
+        current_chat["state"].update(updated_state) # 💡 기존 데이터를 유지하면서 새로운 항목만 안전하게 추가/수정
 
     # 7. 기록 저장
     current_chat["messages"].append({
