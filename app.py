@@ -282,62 +282,80 @@ with st.sidebar:
 # 5. 화면 분기 처리 (Main Content)
 # ==========================================
 
-# --- 🏠 1. 메인화면 (챗봇) ---
+# 1. 메인화면
 if st.session_state.current_page == "main":
-    st.title("🏢 건축 조례 및 법령 해석 AI")
-    st.markdown("<p style='color: #666; font-size: 1.1em;'>건축사, 시공사, 인허가 담당자의 신속한 의사결정을 돕는 심층 규제 분석 엔진입니다.</p>", unsafe_allow_html=True)
-    st.write("") 
+    st.title("건축 조례 및 법령 해석 AI")
+    st.caption("건축사, 시공사, 인허가 담당자의 신속한 의사결정을 돕는 심층 규제 분석 엔진입니다.")
+    st.write("")
 
-    chat_box = st.container(height=500, border=False)
-    user_query = st.chat_input("예: 용인시 처인구 자연녹지지역의 건폐율과 용적률 기준은?")
-    
-    with chat_box:
-        if st.session_state.selected_index is not None:
-            idx = st.session_state.selected_index
-            selected_chat = st.session_state.chat_history[idx]
-            st.info(f"📅 과거 대화 열람 중: **{selected_chat.get('title', '새 대화')}**")
-            
-            for msg in selected_chat.get("messages", []):
-                render_user_message(msg.get("query", ""))
-                render_ai_report(msg.get("response", ""))
-            
-            if st.button("닫기 및 새 질문하기", use_container_width=True):
-                st.session_state.selected_index = None
-                st.rerun()
-        else:
-            st.image(
-                "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop", 
-                use_container_width=True
-            )
-            
-            st.markdown("""
-            <div style="text-align:center; padding: 30px; background: rgba(128,128,128,0.05); border-radius: 12px; margin-top: 15px;">
-                <h3 style="color: #0b459c; margin-bottom: 8px;">어떤 규제를 검토해 드릴까요?</h3>
-                <p style="color: #555; font-size: 14px; line-height: 1.6;">
-                    경기도/용인시 조례 및 125개 상위 법령 데이터베이스를 기반으로 정확하게 분석합니다.<br>
-                    하단의 통합 검색 인풋창에 질의하고 싶은 조례 및 구역을 자유롭게 남겨주세요.
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
+    if st.session_state.selected_index is not None:
+        current_chat = st.session_state.chat_history[st.session_state.selected_index]
+        if "state" not in current_chat:
+            current_chat["state"] = {}
+        current_state = current_chat["state"]
+    else:
+        current_chat = None
+        current_state = {}
+
+    col_chat, col_state = st.columns([3, 1])
+
+    with col_chat:
+        chat_box = st.container(height=500, border=False)
+        user_query = st.chat_input("예: 용인시 처인구 자연녹지지역의 건폐율과 용적률 기준은?")
+
+        with chat_box:
+            if current_chat is not None:
+                st.info(f"과거 대화 열람 중: {current_chat.get('title', '새 대화')}")
+
+                for msg in current_chat.get("messages", []):
+                    render_user_message(msg.get("query", ""))
+                    render_ai_report(msg.get("response", ""))
+
+                if st.button("닫기 및 새 질문하기", use_container_width=True):
+                    st.session_state.selected_index = None
+                    st.rerun()
+            else:
+                img_url = "https:" + chr(47) + chr(47) + "images.unsplash.com" + chr(47) + "photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop"
+                st.image(img_url, use_container_width=True)
+                st.info("어떤 규제를 검토해 드릴까요?\n경기도 용인시 조례 및 125개 상위 법령 데이터베이스를 기반으로 정확하게 분석합니다.\n하단의 통합 검색 인풋창에 질의하고 싶은 조례 및 구역을 자유롭게 남겨주세요.")
 
         if user_query:
             render_user_message(user_query)
-            with st.status("🔍 법률 시맨틱 엔진 가동 중...", expanded=True) as status:
+            with st.status("법률 시맨틱 엔진 가동 중...", expanded=True) as status:
                 try:
-                    st.write("🛰️ 조항 필터링 및 교차 검증 진행 중...")
+                    st.write("조항 필터링 및 교차 검증 진행 중...")
                     response_text = handle_ai_analysis(user_query)
-                    
+
                     if st.session_state.chat_history:
                         st.session_state.selected_index = len(st.session_state.chat_history) - 1
-                    
-                    status.update(label="✅ 심층 분석 완료", state="complete")
+
+                    status.update(label="심층 분석 완료", state="complete")
                     render_ai_report(response_text)
-                    st.toast("분석이 완료되었습니다.", icon="✨")
+                    st.toast("분석이 완료되었습니다.")
                 except Exception as e:
-                    status.update(label="❌ 시스템 에러 발생", state="error")
+                    status.update(label="시스템 에러 발생", state="error")
                     st.error(f"오류가 발생했습니다: {str(e)}")
             st.rerun()
 
+    with col_state:
+        st.subheader("상태 기억소")
+        st.caption("인공지능이 파악한 민원 정보. 표를 클릭해 직접 수정할 수 있다.")
+
+        if current_chat is not None:
+            edited_state = st.data_editor(
+                current_state,
+                num_rows="dynamic",
+                use_container_width=True,
+                key=f"state_editor_{st.session_state.selected_index}"
+            )
+
+            if edited_state != current_state:
+                current_chat["state"] = edited_state
+                save_history(st.session_state.chat_history, st.session_state.user_id)
+                st.rerun()
+        else:
+            st.info("새 대화를 시작하면 상태 기억소가 활성화된다.")
+            
 # --- 📝 2. 민원 양식 생성 ---
 elif st.session_state.current_page == "doc_gen":
     st.title("📝 맞춤형 건축 민원 양식 자동완성")
