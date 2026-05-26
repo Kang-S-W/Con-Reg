@@ -339,7 +339,7 @@ if st.session_state.current_page == "main":
 
    with col_state:
         st.subheader("상태 기억소")
-        st.caption("파악된 대지 및 건축물 조건으로, 답변에 반영됩니다. 직접 추가하거나 수정하실 수 있습니다.")
+        st.caption("인공지능이 파악한 대지 및 건축물 제원. 표를 클릭해 직접 추가하거나 수정할 수 있다.")
 
         if current_chat is not None:
             # 딕셔너리를 편집 가능한 판다스 데이터프레임 구조로 변환
@@ -372,7 +372,7 @@ if st.session_state.current_page == "main":
                 save_history(st.session_state.chat_history, st.session_state.user_id)
                 st.rerun()
         else:
-            st.info("새 대화를 시작하면 상태 기억소가 초기화됩니다.")
+            st.info("새 대화를 시작하면 건축 제원 전용 상태 기억소가 활성화된다.")
             
 # --- 📝 2. 민원 양식 생성 ---
 elif st.session_state.current_page == "doc_gen":
