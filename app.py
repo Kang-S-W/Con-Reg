@@ -340,7 +340,7 @@ if st.session_state.current_page == "main":
     # 기존 메인화면 if 블록의 내부이므로 4칸 들여쓰기 유지
     with col_state:
         st.subheader("상태 기억소")
-        st.caption("인공지능이 파악한 대지 및 건축물 제원. 표를 클릭해 직접 추가하거나 수정할 수 있다.")
+        st.caption("파악된 대지 및 건축물의 상태값으로, 답변에 참조됩니다. 직접 추가하거나 수정하실 수 있습니다.")
 
         if current_chat is not None:
             import pandas as pd
@@ -370,7 +370,7 @@ if st.session_state.current_page == "main":
                 save_history(st.session_state.chat_history, st.session_state.user_id)
                 st.rerun()
         else:
-            st.info("새 대화를 시작하면 건축 제원 전용 상태 기억소가 활성화된다.")
+            st.info("새 대화를 시작하면 건축 제원 전용 상태 기억소가 초기화됩니다.")
             
            
 # --- 📝 2. 민원 양식 생성 ---
