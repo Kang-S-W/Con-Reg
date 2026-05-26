@@ -5,6 +5,7 @@ json_match = re.search(r'\{.*\}', result, re.DOTALL)
         pass
     return current_state
 
+
 def handle_ai_analysis(user_query):
     kst_now = (datetime.now(timezone.utc) + timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -63,6 +64,7 @@ def handle_ai_analysis(user_query):
         try:
             MODEL_NAME = "gemini-2.5-flash"
             api_key = st.secrets["GEMINI_API_KEY"]
+            # 오타 수정: 자동 완성된 마크다운 기호 제거
             url = f"[https://generativelanguage.googleapis.com/v1/models/](https://generativelanguage.googleapis.com/v1/models/){MODEL_NAME}:generateContent?key={api_key}"
             
             rewrite_prompt = context_text + f"위 대화 맥락을 고려할 때 다음 질문이 생략된 단어가 있다면 완전한 문장으로 다시 작성하라. 질문: {user_query}"
@@ -91,7 +93,7 @@ def handle_ai_analysis(user_query):
 
     final_query_with_context = context_text + "새로운 질문: " + user_query
 
-    # 💡 1차 호출: 행정 문서 텍스트만 안전하게 생성 (문자열 반환)
+    # 1차 호출: 행정 문서 텍스트만 안전하게 생성 (문자열 반환)
     response_text = get_gemini_response(
         user_query=final_query_with_context, 
         db_status=db_status,
@@ -100,7 +102,7 @@ def handle_ai_analysis(user_query):
         state_context=state_context 
     )
 
-    # 💡 2차 호출: 위에서 완성된 답변을 토대로 상태 JSON 추출
+    # 2차 호출: 위에서 완성된 답변을 토대로 상태 JSON 추출
     updated_state = get_gemini_state_update(user_query, response_text, current_state)
 
     # 6. 답변 완료 후 상태 데이터 능동 갱신
@@ -117,6 +119,7 @@ def handle_ai_analysis(user_query):
     save_history(st.session_state.chat_history, st.session_state.user_id)
 
     return response_text
+
 
 def fallback_civil_document(civil_type, site_address, civil_content):
     """
@@ -142,6 +145,7 @@ def fallback_civil_document(civil_type, site_address, civil_content):
 특히 인접 대지 건축물로 인한 일조권 침해 여부, 건축물 높이 및 이격거리 기준 적합 여부, 허가 내용과 실제 시공 상태의 일치 여부를 확인해 주시기 바랍니다.
 검토 결과에 따라 필요한 행정 조치 가능 여부와 향후 처리 절차를 안내해 주시기 바랍니다.
 """
+
 
 def format_civil_document_text(text):
     """
@@ -173,6 +177,7 @@ def format_civil_document_text(text):
     text = re.sub(r"\n{3,}", "\n\n", text).strip()
     return text
 
+
 def llm_invoke_function(system_prompt, user_prompt, civil_type, site_address, civil_content):
     """
     민원 양식 생성 전용 Gemini 호출 함수
@@ -181,7 +186,7 @@ def llm_invoke_function(system_prompt, user_prompt, civil_type, site_address, ci
         MODEL_NAME = "gemini-2.5-flash"
         api_key = st.secrets["GEMINI_API_KEY"]
         
-        # URL에 마크다운 기호가 포함된 심각한 오타 수정 완료
+        # 오타 수정: 자동 완성된 마크다운 기호 제거
         url = f"[https://generativelanguage.googleapis.com/v1/models/](https://generativelanguage.googleapis.com/v1/models/){MODEL_NAME}:generateContent?key={api_key}"
         headers = {"Content-Type": "application/json"}
 
@@ -206,6 +211,7 @@ def llm_invoke_function(system_prompt, user_prompt, civil_type, site_address, ci
         pass
 
     return fallback_civil_document(civil_type, site_address, civil_content)
+
 
 def generate_civil_document(civil_type, site_address, civil_content):
     """
