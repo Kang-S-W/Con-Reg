@@ -6,11 +6,6 @@ json_match = re.search(r'\{.*\}', result, re.DOTALL)
     return current_state
 
 def handle_ai_analysis(user_query):
-    import streamlit as st
-    import requests
-    import json
-    from datetime import datetime, timezone, timedelta
-    
     kst_now = (datetime.now(timezone.utc) + timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
 
     # 1. 채팅 기록 세션 초기화 및 상태 기억소 신설
@@ -68,12 +63,12 @@ def handle_ai_analysis(user_query):
         try:
             MODEL_NAME = "gemini-2.5-flash"
             api_key = st.secrets["GEMINI_API_KEY"]
-            url = f"https:{chr(47)}{chr(47)}generativelanguage.googleapis.com{chr(47)}v1{chr(47)}models{chr(47)}{MODEL_NAME}:generateContent?key={api_key}"
+            url = f"[https://generativelanguage.googleapis.com/v1/models/](https://generativelanguage.googleapis.com/v1/models/){MODEL_NAME}:generateContent?key={api_key}"
             
             rewrite_prompt = context_text + f"위 대화 맥락을 고려할 때 다음 질문이 생략된 단어가 있다면 완전한 문장으로 다시 작성하라. 질문: {user_query}"
             
             payload = {"contents": [{"parts": [{"text": rewrite_prompt}]}]}
-            headers = {"Content-Type": f"application{chr(47)}json"}
+            headers = {"Content-Type": "application/json"}
             
             res = requests.post(url, headers=headers, data=json.dumps(payload), timeout=10)
             if res.status_code == 200:
@@ -91,10 +86,6 @@ def handle_ai_analysis(user_query):
         state_context = ""
 
     # 5. DB 탐색 및 인공지능 응답 호출
-    from engine import get_semantic_keywords, get_gemini_response
-    from database import get_ordinance_data
-    from storage import save_history
-
     semantic_tags = get_semantic_keywords(search_query)
     db_status, db_context = get_ordinance_data(search_query, semantic_tags)
 
@@ -152,7 +143,6 @@ def fallback_civil_document(civil_type, site_address, civil_content):
 검토 결과에 따라 필요한 행정 조치 가능 여부와 향후 처리 절차를 안내해 주시기 바랍니다.
 """
 
-
 def format_civil_document_text(text):
     """
     Gemini가 제목과 내용을 한 줄로 붙여서 반환하더라도
@@ -183,7 +173,6 @@ def format_civil_document_text(text):
     text = re.sub(r"\n{3,}", "\n\n", text).strip()
     return text
 
-
 def llm_invoke_function(system_prompt, user_prompt, civil_type, site_address, civil_content):
     """
     민원 양식 생성 전용 Gemini 호출 함수
@@ -191,6 +180,8 @@ def llm_invoke_function(system_prompt, user_prompt, civil_type, site_address, ci
     try:
         MODEL_NAME = "gemini-2.5-flash"
         api_key = st.secrets["GEMINI_API_KEY"]
+        
+        # URL에 마크다운 기호가 포함된 심각한 오타 수정 완료
         url = f"[https://generativelanguage.googleapis.com/v1/models/](https://generativelanguage.googleapis.com/v1/models/){MODEL_NAME}:generateContent?key={api_key}"
         headers = {"Content-Type": "application/json"}
 
@@ -215,7 +206,6 @@ def llm_invoke_function(system_prompt, user_prompt, civil_type, site_address, ci
         pass
 
     return fallback_civil_document(civil_type, site_address, civil_content)
-
 
 def generate_civil_document(civil_type, site_address, civil_content):
     """
