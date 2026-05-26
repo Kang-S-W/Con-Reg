@@ -49,14 +49,11 @@ def get_gemini_state_update(query, response, current_state):
         pass
     return current_state
 
-
 def handle_ai_analysis(user_query):
-    """
-    [수정된 함수] 질의 복원 알고리즘 + 상태 기억소(State Storage) 통합 버전
-    """
     import streamlit as st
     import requests
     import json
+    from datetime import datetime, timezone, timedelta
     
     kst_now = (datetime.now(timezone.utc) + timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -73,7 +70,7 @@ def handle_ai_analysis(user_query):
             "created_at": kst_now,
             "updated_at": kst_now,
             "messages": [],
-            "state": {} # 💡 상태 기억소 초기화
+            "state": {}
         }
         st.session_state.chat_history.append(new_chat)
         st.session_state.selected_index = len(st.session_state.chat_history) - 1
@@ -84,7 +81,7 @@ def handle_ai_analysis(user_query):
         current_chat["messages"] = []
     
     if "state" not in current_chat:
-        current_chat["state"] = {} # 💡 기존 대화방에도 상태 기억소 강제 할당
+        current_chat["state"] = {}
 
     # 2. 대화 맥락 텍스트 추출 (기존 로직 유지)
     context_text = ""
@@ -115,12 +112,12 @@ def handle_ai_analysis(user_query):
         try:
             MODEL_NAME = "gemini-2.5-flash"
             api_key = st.secrets["GEMINI_API_KEY"]
-            url = f"https:__generativelanguage.googleapis.com_v1_models_{MODEL_NAME}:generateContent?key={api_key}".replace("_", chr(47))
+            url = f"https:{chr(47)}{chr(47)}generativelanguage.googleapis.com{chr(47)}v1{chr(47)}models{chr(47)}{MODEL_NAME}:generateContent?key={api_key}"
             
-            rewrite_prompt = context_text + f"위 대화 맥락을 고려할 때 다음 사용자의 질문이 생략된 단어가 있는 불완전한 문장이라면 맥락을 포함한 완전한 하나의 질문으로 다시 작성하고 이미 완전한 문장이라면 원본 그대로 출력하라. 다른 부가적인 말은 절대 덧붙이지 마라. 질문: {user_query}"
+            rewrite_prompt = context_text + f"위 대화 맥락을 고려할 때 다음 질문이 생략된 단어가 있다면 완전한 문장으로 다시 작성하라. 질문: {user_query}"
             
             payload = {"contents": [{"parts": [{"text": rewrite_prompt}]}]}
-            headers = {"Content-Type": "application_json".replace("_", chr(47))}
+            headers = {"Content-Type": f"application{chr(47)}json"}
             
             res = requests.post(url, headers=headers, data=json.dumps(payload), timeout=10)
             if res.status_code == 200:
@@ -133,7 +130,7 @@ def handle_ai_analysis(user_query):
     # 4. 상태 프롬프트 주입 준비
     current_state = current_chat["state"]
     if current_state:
-        state_context = f"[현재까지 확정된 민원인 건축 정보 상태]: {json.dumps(current_state, ensure_ascii=False)}\n위 정보를 기본 전제로 하여 법규를 해석할 것."
+        state_context = f"[현재 확정된 대지 제원]: {json.dumps(current_state, ensure_ascii=False)}\n위 정보를 전제로 법규를 해석할 것."
     else:
         state_context = ""
 
@@ -147,8 +144,8 @@ def handle_ai_analysis(user_query):
 
     final_query_with_context = context_text + "새로운 질문: " + user_query
 
-    # 💡 engine.py에 새로 추가한 state_context 인자 전달
-    response_text = get_gemini_response(
+    # 단일 호출로 통합된 구간
+    response_data = get_gemini_response(
         user_query=final_query_with_context, 
         db_status=db_status,
         db_context=db_context,
@@ -156,9 +153,12 @@ def handle_ai_analysis(user_query):
         state_context=state_context 
     )
 
+    response_text = response_data.get("response_text", "응답 생성 실패")
+    updated_state = response_data.get("updated_state", {})
+
     # 6. 답변 완료 후 상태 데이터 능동 갱신
-    updated_state = get_gemini_state_update(user_query, response_text, current_state)
-    current_chat["state"] = updated_state # 세션에 갱신된 JSON 덮어쓰기
+    if updated_state and isinstance(updated_state, dict):
+        current_chat["state"].update(updated_state)
 
     # 7. 기록 저장
     current_chat["messages"].append({
@@ -170,7 +170,6 @@ def handle_ai_analysis(user_query):
     save_history(st.session_state.chat_history, st.session_state.user_id)
 
     return response_text
-
 
 def fallback_civil_document(civil_type, site_address, civil_content):
     """
