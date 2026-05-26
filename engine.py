@@ -185,4 +185,4 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags="", sta
                 return final_text + sitemap_text
             time.sleep(2)
         except: continue
-    return "시스템 엔진 응답 실패. 잠시 후 다시 시도해 주기 바랍니다. 응답가능시간인 100초 이내 실패시 질문 내용을 구체화하시기 바랍니다"
+    return "시스템 엔진 응답 실패. 잠시 후 다시 시도해 주기 바랍니다. 100초 이내에 응답이 실패했다면 질문 내용을 분할/구체화하시기 바랍니다"
