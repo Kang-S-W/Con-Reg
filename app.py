@@ -364,6 +364,20 @@ if st.session_state.current_page == "main":
         st.subheader("상태 저장소")
         st.caption("파악된 대지 및 건축물의 상태값으로, 답변에 참조됩니다. 직접 추가하거나 수정하실 수 있습니다.")
 
+        # 주소 연동 UI 추가 및 명시적 안내 문구 배치
+        with st.expander("주소 기반 대지 정보 자동 연동", expanded=True):
+            st.caption("도로명 주소를 입력하면 공공데이터포탈을 이용해 해당 대지의 [용도지역, 용도지구, 대지면적] 정보가 추출되어 반영됩니다.")
+            search_addr = st.text_input("도로명 주소 입력", placeholder="예: 중부대로 1199", label_visibility="collapsed")
+            
+            if st.button("데이터 연동", use_container_width=True):
+                if current_chat is not None:
+                    # 공공데이터 API 연결 전 작동을 확인하기 위한 가상 데이터 삽입
+                    mock_data = {"용도지역": "준주거지역 (임시)", "용도지구": "해당없음 (임시)", "대지면적": "8000 (임시)"}
+                    current_chat["state"].update(mock_data)
+                    from storage import save_history
+                    save_history(st.session_state.chat_history, st.session_state.user_id)
+                    st.rerun()
+
         if current_chat is not None:
             import pandas as pd
             
@@ -389,6 +403,7 @@ if st.session_state.current_page == "main":
 
             if new_state != current_state:
                 current_chat["state"] = new_state
+                from storage import save_history
                 save_history(st.session_state.chat_history, st.session_state.user_id)
                 st.rerun()
         else:
