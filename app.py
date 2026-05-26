@@ -306,108 +306,115 @@ with st.sidebar:
 
 # 1. 메인화면
 if st.session_state.current_page == "main":
-    st.title("건축 조례 및 법령 해석 AI")
-    st.caption("건축사, 시공사, 인허가 담당자의 신속한 의사결정을 돕는 심층 규제 분석 엔진입니다.")
-    st.write("")
+        st.title("건축 조례 및 법령 해석 AI")
+        st.caption("건축사, 시공사, 인허가 담당자의 신속한 의사결정을 돕는 심층 규제 분석 엔진입니다.")
+        st.write("")
 
-    if st.session_state.selected_index is not None:
-        current_chat = st.session_state.chat_history[st.session_state.selected_index]
-        if "state" not in current_chat:
-            current_chat["state"] = {}
-        current_state = current_chat["state"]
-    else:
-        current_chat = None
-        current_state = {}
-
-    col_chat, col_state = st.columns([3, 1])
-
-    with col_chat:
-        chat_box = st.container(height=500, border=False)
-        user_query = st.chat_input("예: 용인시 처인구 자연녹지지역의 건폐율과 용적률 기준은?")
-
-        with chat_box:
-            if current_chat is not None:
-                st.info(f"과거 대화 열람 중: {current_chat.get('title', '새 대화')}")
-
-                for msg in current_chat.get("messages", []):
-                    render_user_message(msg.get("query", ""))
-                    render_ai_report(msg.get("response", ""))
-
-                if st.button("닫기 및 새 질문하기", use_container_width=True):
-                    st.session_state.selected_index = None
-                    st.rerun()
-            else:
-                img_url = "https:" + chr(47) + chr(47) + "images.unsplash.com" + chr(47) + "photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop"
-                st.image(img_url, use_container_width=True)
-                st.info("어떤 규제를 검토해 드릴까요?\n경기도 용인시 조례 및 125개 상위 법령 데이터베이스를 기반으로 정확하게 분석합니다.\n하단의 통합 검색 인풋창에 질의하고 싶은 조례 및 구역을 자유롭게 남겨주세요.")
-
-        if user_query:
-            render_user_message(user_query)
-            with st.status("법률 시맨틱 엔진 가동 중...", expanded=True) as status:
-                try:
-                    st.write("조항 필터링 및 교차 검증 진행 중...")
-                    response_text = handle_ai_analysis(user_query)
-
-                    if st.session_state.chat_history:
-                        st.session_state.selected_index = len(st.session_state.chat_history) - 1
-
-                    status.update(label="심층 분석 완료", state="complete")
-                    render_ai_report(response_text)
-                    st.toast("분석이 완료되었습니다.")
-                except Exception as e:
-                    status.update(label="시스템 에러 발생", state="error")
-                    st.error(f"오류가 발생했습니다: {str(e)}")
-            st.rerun()
-
-    # 기존 메인화면 if 블록의 내부이므로 4칸 들여쓰기 유지
-    with col_state:
-        st.subheader("상태 저장소")
-        st.caption("파악된 대지 및 건축물의 상태값으로, 답변에 참조됩니다. 직접 추가하거나 수정하실 수 있습니다.")
-
-        # 주소 연동 UI 추가 및 명시적 안내 문구 배치
-        with st.expander("주소 기반 대지 정보 자동 연동", expanded=True):
-            st.caption("도로명 주소를 입력하면 공공데이터포탈을 이용해 해당 대지의 [용도지역, 용도지구, 대지면적] 정보가 추출되어 반영됩니다.")
-            search_addr = st.text_input("도로명 주소 입력", placeholder="예: 중부대로 1199", label_visibility="collapsed")
-            
-            if st.button("데이터 연동", use_container_width=True):
-                if current_chat is not None:
-                    # 공공데이터 API 연결 전 작동을 확인하기 위한 가상 데이터 삽입
-                    mock_data = {"용도지역": "준주거지역 (임시)", "용도지구": "해당없음 (임시)", "대지면적": "8000 (임시)"}
-                    current_chat["state"].update(mock_data)
-                    from storage import save_history
-                    save_history(st.session_state.chat_history, st.session_state.user_id)
-                    st.rerun()
-
-        if current_chat is not None:
-            import pandas as pd
-            
-            if not current_state:
-                df_state = pd.DataFrame(columns=["항목", "내용"])
-            else:
-                df_state = pd.DataFrame(list(current_state.items()), columns=["항목", "내용"])
-
-            edited_df = st.data_editor(
-                df_state,
-                num_rows="dynamic",
-                use_container_width=True,
-                hide_index=True,
-                key=f"state_editor_{st.session_state.selected_index}"
-            )
-
-            new_state = {}
-            for _, row in edited_df.iterrows():
-                key_val = str(row["항목"]).strip() if pd.notna(row["항목"]) else ""
-                val_val = str(row["내용"]).strip() if pd.notna(row["내용"]) else ""
-                if key_val and key_val != "nan":
-                    new_state[key_val] = val_val
-
-            if new_state != current_state:
-                current_chat["state"] = new_state
-                from storage import save_history
-                save_history(st.session_state.chat_history, st.session_state.user_id)
-                st.rerun()
+        if st.session_state.selected_index is not None:
+            current_chat = st.session_state.chat_history[st.session_state.selected_index]
+            if "state" not in current_chat:
+                current_chat["state"] = {}
+            current_state = current_chat["state"]
         else:
-            st.info("상태 저장소는 대화창별로 저장됩니다.")
+            current_chat = None
+            current_state = {}
+
+        # 신규 추가: 상태 저장소 표시 여부를 결정하는 토글 스위치
+        show_state_panel = st.toggle("상태 저장소 패널 켜기", value=True)
+
+        # 토글 상태에 따른 동적 화면 분할
+        if show_state_panel:
+            col_chat, col_state = st.columns([3, 1])
+        else:
+            col_chat = st.container()
+            col_state = None
+
+        with col_chat:
+            chat_box = st.container(height=500, border=False)
+            user_query = st.chat_input("예: 용인시 처인구 자연녹지지역의 건폐율과 용적률 기준은?")
+
+            with chat_box:
+                if current_chat is not None:
+                    st.info(f"과거 대화 열람 중: {current_chat.get('title', '새 대화')}")
+
+                    for msg in current_chat.get("messages", []):
+                        render_user_message(msg.get("query", ""))
+                        render_ai_report(msg.get("response", ""))
+
+                    if st.button("닫기 및 새 질문하기", use_container_width=True):
+                        st.session_state.selected_index = None
+                        st.rerun()
+                else:
+                    img_url = "https:" + chr(47) + chr(47) + "images.unsplash.com" + chr(47) + "photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop"
+                    st.image(img_url, use_container_width=True)
+                    st.info("어떤 규제를 검토해 드릴까요?\n경기도 용인시 조례 및 125개 상위 법령 데이터베이스를 기반으로 정확하게 분석합니다.\n하단의 통합 검색 인풋창에 질의하고 싶은 조례 및 구역을 자유롭게 남겨주세요.")
+
+            if user_query:
+                render_user_message(user_query)
+                with st.status("법률 시맨틱 엔진 가동 중...", expanded=True) as status:
+                    try:
+                        st.write("조항 필터링 및 교차 검증 진행 중...")
+                        response_text = handle_ai_analysis(user_query)
+
+                        if st.session_state.chat_history:
+                            st.session_state.selected_index = len(st.session_state.chat_history) - 1
+
+                        status.update(label="심층 분석 완료", state="complete")
+                        render_ai_report(response_text)
+                        st.toast("분석이 완료되었습니다.")
+                    except Exception as e:
+                        status.update(label="시스템 에러 발생", state="error")
+                        st.error(f"오류가 발생했습니다: {str(e)}")
+                st.rerun()
+
+        # 토글이 켜져 있을 때만 우측 상태 패널 렌더링 수행
+        if show_state_panel and col_state is not None:
+            with col_state:
+                st.subheader("상태 저장소")
+                st.caption("파악된 대지 및 건축물의 상태값으로, 답변에 참조됩니다. 직접 추가하거나 수정하실 수 있습니다.")
+
+                with st.expander("주소 기반 대지 정보 자동 연동", expanded=True):
+                    st.caption("도로명 주소를 입력하면 해당 대지의 [용도지역, 용도지구, 대지면적] 정보가 추출되어 아래 표에 자동 반영된다.")
+                    search_addr = st.text_input("도로명 주소 입력", placeholder="예: 중부대로 1199", label_visibility="collapsed")
+                    
+                    if st.button("데이터 연동", use_container_width=True):
+                        if current_chat is not None:
+                            mock_data = {"용도지역": "준주거지역 (임시)", "용도지구": "해당없음 (임시)", "대지면적": "8000 (임시)"}
+                            current_chat["state"].update(mock_data)
+                            from storage import save_history
+                            save_history(st.session_state.chat_history, st.session_state.user_id)
+                            st.rerun()
+
+                if current_chat is not None:
+                    import pandas as pd
+                    
+                    if not current_state:
+                        df_state = pd.DataFrame(columns=["항목", "내용"])
+                    else:
+                        df_state = pd.DataFrame(list(current_state.items()), columns=["항목", "내용"])
+
+                    edited_df = st.data_editor(
+                        df_state,
+                        num_rows="dynamic",
+                        use_container_width=True,
+                        hide_index=True,
+                        key=f"state_editor_{st.session_state.selected_index}"
+                    )
+
+                    new_state = {}
+                    for _, row in edited_df.iterrows():
+                        key_val = str(row["항목"]).strip() if pd.notna(row["항목"]) else ""
+                        val_val = str(row["내용"]).strip() if pd.notna(row["내용"]) else ""
+                        if key_val and key_val != "nan":
+                            new_state[key_val] = val_val
+
+                    if new_state != current_state:
+                        current_chat["state"] = new_state
+                        from storage import save_history
+                        save_history(st.session_state.chat_history, st.session_state.user_id)
+                        st.rerun()
+                else:
+                    st.info("상태 저장소는 대화창별로 저장됩니다.")
             
            
 # --- 📝 2. 민원 양식 생성 ---
