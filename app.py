@@ -9,7 +9,9 @@ import os
 import io
 import uuid
 
+# ==========================================
 # 1. 페이지 설정 (가장 먼저 실행되어야 함)
+# ==========================================
 st.set_page_config(
     page_title="용인시 건축 조례 지원 플랫폼", 
     page_icon="🏢", 
@@ -28,13 +30,6 @@ from storage import load_history, save_history
 # 용인시 민원창구 연계버튼
 inject_floating_button()
 
-# --- [로컬 이미지 변환 함수] ---
-def get_image_base64(image_path):
-    if os.path.exists(image_path):
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode()
-    return ""
-
 # ==========================================
 # 2. 상태 변수 초기화
 # ==========================================
@@ -49,99 +44,97 @@ def sync_dark_mode():
     st.session_state.dark_mode = st.session_state.dark_mode_toggle
 
 # ==========================================
-# 3. 프리미엄 CSS 스타일링 (SaaS 룩앤필 & 아이콘 깨짐 완벽 방지)
+# 3. 프리미엄 CSS 스타일링 (SaaS 룩앤필 & 가시성 개선)
 # ==========================================
-# 기존 style.py에서 넘어오는 CSS가 있다면 여기서 먼저 실행됩니다.
 apply_custom_style(st.session_state.dark_mode) 
 
 def apply_premium_ui(is_dark):
+    # ChatGPT, Claude 스타일의 모던/플랫 디자인 적용
     base_css = """
 <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
     @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
     
-    /* 1. 기본 폰트 적용 (!important 남발 방지) */
     html, body, .stApp, p, h1, h2, h3, h4, h5, h6, label, input, textarea, div { 
         font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; 
     }
     
-    /* 2. 🚨 가장 중요한 아이콘 폰트 강제 복구 블록 🚨 */
-    /* style.py 등에서 * { font-family: ... !important; } 가 적용되었더라도 이를 무력화합니다. */
-    span[class*="material-symbols"], 
-    span[class*="material-icons"], 
-    i[class*="material"],
-    .material-icons,
-    .material-symbols-rounded,
-    .material-symbols-outlined,
-    [data-testid="stIconMaterial"],
-    [data-testid="stExpanderToggleIcon"],
-    button[kind="header"] span,
-    button[kind="header"] i {
-        font-family: 'Material Symbols Rounded', 'Material Symbols Outlined', 'Material Icons', sans-serif !important;
+    /* 아이콘 폰트 강제 복구 블록 */
+    span[class*="material-symbols"], span[class*="material-icons"], i[class*="material"],
+    .material-icons, .material-symbols-rounded, .material-symbols-outlined,
+    [data-testid="stIconMaterial"], [data-testid="stExpanderToggleIcon"],
+    button[kind="header"] span, button[kind="header"] i {
+        font-family: 'Material Symbols Rounded', 'Material Icons', sans-serif !important;
         font-weight: normal !important;
         font-style: normal !important;
-        letter-spacing: normal !important;
-        text-transform: none !important;
-        display: inline-block !important;
-        white-space: nowrap !important;
-        word-wrap: normal !important;
-        direction: ltr !important;
-        -webkit-font-feature-settings: 'liga' 1 !important;
-        font-feature-settings: 'liga' 1 !important;
         -webkit-font-smoothing: antialiased !important;
     }
     
-    /* 입력창 디자인 */
+    /* 입력창 디자인 (모던 플랫 스타일) */
     div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div {
-        border-radius: 8px !important;
-        transition: all 0.3s ease !important;
+        border-radius: 12px !important;
+        transition: all 0.2s ease !important;
+        box-shadow: none !important;
     }
     div[data-baseweb="input"] > div:focus-within, div[data-baseweb="textarea"] > div:focus-within {
-        border-color: #0b459c !important;
-        box-shadow: 0 0 0 2px rgba(11, 69, 156, 0.2) !important;
+        border-color: #4A90E2 !important;
+        box-shadow: 0 0 0 1px #4A90E2 !important;
     }
     
     /* 버튼 디자인 */
     div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {
         border-radius: 8px !important;
-        font-weight: 600 !important;
+        font-weight: 500 !important;
         transition: all 0.2s ease !important;
-        border: none !important;
-        font-family: 'Pretendard', sans-serif !important; /* 버튼 텍스트는 Pretendard 강제 */
     }
-    div[data-testid="stButton"] button:hover, div[data-testid="stFormSubmitButton"] button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
-    }
-    div[data-testid="stButton"] button:active { transform: translateY(0px); }
+    div[data-testid="stButton"] button:active { transform: scale(0.98); }
     
-    /* Expander (아코디언 메뉴) 디자인 */
+    /* Expander 디자인 */
     div[data-testid="stExpander"] {
-        border-radius: 10px !important;
-        border: 1px solid rgba(150, 150, 150, 0.2) !important;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.03) !important;
+        border-radius: 12px !important;
+        box-shadow: none !important;
         margin-bottom: 12px !important;
     }
 </style>
 """
-    # 다크/라이트 모드별 색상 세부 조정
-    theme_css = """
+    # 라이트/다크 모드 글씨 안보임 현상을 완벽히 해결한 테마 분기
+    if is_dark:
+        theme_css = """
 <style>
-    .stApp { background-color: #121212 !important; }
-    div[data-testid="stSidebar"] { background-color: #1A1A1D !important; border-right: 1px solid #2d2d30 !important; }
-    div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div { background-color: #242427 !important; border: 1px solid #333 !important; }
-    div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button { background-color: #2a2b2f !important; color: #fff !important; }
-    div[data-testid="stButton"] button:hover, div[data-testid="stFormSubmitButton"] button:hover { background-color: #3b3d44 !important; }
-    div[data-testid="stExpander"] details summary { background-color: #1e1e22 !important; color: #fff !important; }
+    [data-testid="stAppViewContainer"] { background-color: #212121 !important; color: #ECECEC !important; }
+    [data-testid="stHeader"] { background-color: transparent !important; }
+    [data-testid="stSidebar"] { background-color: #171717 !important; border-right: 1px solid #333 !important; }
+    
+    div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div { background-color: #2F2F2F !important; border: 1px solid #444 !important; }
+    div[data-baseweb="input"] input, div[data-baseweb="textarea"] textarea { color: #FFF !important; }
+    
+    div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button { background-color: #2F2F2F !important; color: #ECECEC !important; border: 1px solid #444 !important; }
+    div[data-testid="stButton"] button:hover { background-color: #3A3A3A !important; border-color: #555 !important; }
+    
+    div[data-testid="stExpander"] { background-color: #171717 !important; border: 1px solid #333 !important; }
+    div[data-testid="stExpander"] details summary { color: #ECECEC !important; }
+    
+    /* 기본 텍스트 요소가 배경에 묻히지 않도록 상위 컨테이너 컬러 강제 */
+    .stMarkdown, .stText { color: #ECECEC !important; }
 </style>
-""" if is_dark else """
+"""
+    else:
+        theme_css = """
 <style>
-    .stApp { background-color: #F8F9FA !important; }
-    div[data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E9ECEF !important; }
-    div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div { background-color: #FFFFFF !important; border: 1px solid #CED4DA !important; }
-    div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button { background-color: #FFFFFF !important; color: #333 !important; border: 1px solid #DEE2E6 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;}
-    div[data-testid="stButton"] button:hover, div[data-testid="stFormSubmitButton"] button:hover { background-color: #F1F3F5 !important; border-color: #CED4DA !important; }
-    div[data-testid="stExpander"] details summary { background-color: #FFFFFF !important; color: #212529 !important; }
+    [data-testid="stAppViewContainer"] { background-color: #FFFFFF !important; color: #111111 !important; }
+    [data-testid="stHeader"] { background-color: transparent !important; }
+    [data-testid="stSidebar"] { background-color: #F9F9F9 !important; border-right: 1px solid #E5E5E5 !important; }
+    
+    div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div { background-color: #FFFFFF !important; border: 1px solid #E5E5E5 !important; }
+    div[data-baseweb="input"] input, div[data-baseweb="textarea"] textarea { color: #111111 !important; }
+    
+    div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button { background-color: #FFFFFF !important; color: #333333 !important; border: 1px solid #E5E5E5 !important; }
+    div[data-testid="stButton"] button:hover { background-color: #F0F0F0 !important; border-color: #D5D5D5 !important; }
+    
+    div[data-testid="stExpander"] { background-color: #F9F9F9 !important; border: 1px solid #E5E5E5 !important; }
+    div[data-testid="stExpander"] details summary { color: #111111 !important; }
+    
+    .stMarkdown, .stText { color: #111111 !important; }
 </style>
 """
     st.markdown(base_css + theme_css, unsafe_allow_html=True)
@@ -192,7 +185,6 @@ def open_history_search_dialog():
 # 4. 사이드바 구성 (그룹화 및 깔끔한 정리)
 # ==========================================
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/1048/1048978.png", width=50)
     st.title("플랫폼 제어")
     
     # [인증 섹션]
@@ -253,7 +245,7 @@ with st.sidebar:
             open_history_search_dialog()
 
     st.subheader("대화 이력")
-    history_container = st.container(height=250, border=True)
+    history_container = st.container(height=350, border=False)
     with history_container:
         if st.session_state.chat_history:
             for i, chat in enumerate(reversed(st.session_state.chat_history)):
@@ -295,9 +287,11 @@ with st.sidebar:
 # 5. 화면 분기 처리 (Main Content)
 # ==========================================
 
-# 1. 메인화면
+# --- 🤖 1. 메인화면 ---
 if st.session_state.current_page == "main":
-    st.title("건축 조례 및 법령 해석 AI")
+    
+    # 상단 헤더 깔끔하게 정리
+    st.markdown("## 🏢 건축 조례 및 법령 해석 AI")
     st.caption("건축사, 시공사, 인허가 담당자의 신속한 의사결정을 돕는 심층 규제 분석 엔진입니다.")
     st.write("")
 
@@ -310,12 +304,10 @@ if st.session_state.current_page == "main":
         current_chat = None
         current_state = {}
 
-    col_top_left, col_top_right = st.columns([3, 1])
+    col_top_left, col_top_right = st.columns([4, 1])
     with col_top_right:
-        # 💡 핵심 수정: processor.py와 통신하기 위한 고유 이름표(key="use_state_panel") 추가
-        show_state_panel = st.toggle("상태 저장소 패널 켜기", value=True, key="use_state_panel")
+        show_state_panel = st.toggle("상태 저장소 패널", value=True, key="use_state_panel")
 
-    # 토글 상태에 따른 메인 화면 동적 분할
     if show_state_panel:
         col_chat, col_state = st.columns([3, 1])
     else:
@@ -323,24 +315,33 @@ if st.session_state.current_page == "main":
         col_state = None
 
     with col_chat:
-        chat_box = st.container(height=500, border=False)
+        chat_box = st.container(height=550, border=False)
         user_query = st.chat_input("예: 용인시 처인구 자연녹지지역의 건폐율과 용적률 기준은?")
 
         with chat_box:
             if current_chat is not None:
                 st.info(f"과거 대화 열람 중: {current_chat.get('title', '새 대화')}")
-
                 for msg in current_chat.get("messages", []):
                     render_user_message(msg.get("query", ""))
                     render_ai_report(msg.get("response", ""))
-
+                
                 if st.button("닫기 및 새 질문하기", use_container_width=True):
                     st.session_state.selected_index = None
                     st.rerun()
             else:
-                img_url = "https:" + chr(47) + chr(47) + "images.unsplash.com" + chr(47) + "photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop"
-                st.image(img_url, use_container_width=True)
-                st.info("어떤 규제를 검토해 드릴까요?\n경기도 용인시 조례 및 125개 상위 법령 데이터베이스를 기반으로 정확하게 분석합니다.\n하단의 통합 검색 인풋창에 질의하고 싶은 조례 및 구역을 자유롭게 남겨주세요.")
+                # 이미지를 제거하고 모던한 안내 메시지로 대체
+                st.markdown("""
+                <div style='text-align: center; margin-top: 80px; margin-bottom: 40px;'>
+                    <h2 style='color: #888; margin-bottom: 20px;'>어떤 규제를 검토해 드릴까요?</h2>
+                    <p style='color: #aaa; font-size: 16px;'>경기도 용인시 조례 및 125개 상위 법령 데이터베이스를 기반으로 정확하게 분석합니다.<br>하단의 입력창에 질의하고 싶은 조례 및 구역을 자유롭게 남겨주세요.</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                col_chip1, col_chip2 = st.columns(2)
+                with col_chip1:
+                    st.info("💡 **예시:** 인접 대지 신축 공사로 인한 일조권 사선제한 예외 조건은?")
+                with col_chip2:
+                    st.info("💡 **예시:** 용인시 기흥구 보정동 제2종 일반주거지역의 건축선 후퇴 기준은?")
 
         if user_query:
             render_user_message(user_query)
@@ -360,16 +361,13 @@ if st.session_state.current_page == "main":
                     st.error(f"오류가 발생했습니다: {str(e)}")
             st.rerun()
 
-    # 토글이 켜져 있을 때만 우측 상태 패널 렌더링 수행
     if show_state_panel and col_state is not None:
         with col_state:
             st.subheader("상태 저장소")
-            st.caption("파악된 대지 및 건축물의 상태값으로, 답변에 참조됩니다. 직접 추가하거나 수정하실 수 있습니다.")
+            st.caption("대지 및 건축물의 상태값으로, 답변에 참조됩니다.")
 
             with st.expander("주소 기반 대지 정보 자동 연동", expanded=True):
-                st.caption("도로명 주소를 입력하면 해당 대지의 [용도지역, 용도지구, 대지면적] 정보가 추출되어 아래 표에 자동 반영된다.")
                 search_addr = st.text_input("도로명 주소 입력", placeholder="예: 중부대로 1199", label_visibility="collapsed")
-                
                 if st.button("데이터 연동", use_container_width=True):
                     if current_chat is not None:
                         mock_data = {"용도지역": "준주거지역 (임시)", "용도지구": "해당없음 (임시)", "대지면적": "8000 (임시)"}
@@ -412,14 +410,8 @@ if st.session_state.current_page == "main":
         
 # --- 📝 2. 민원 양식 생성 ---
 elif st.session_state.current_page == "doc_gen":
-    st.title("📝 맞춤형 건축 민원 양식 자동완성")
-    
-    st.image(
-        "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop",
-        use_container_width=True
-    )
-    
-    st.info("💡 **Tip:** 복잡한 민원 내용을 입력하면 AI가 용인시 행정 양식에 맞춰 문서를 정갈하게 작성해 드립니다. (법령 검토는 챗봇을 이용해 주세요)")
+    st.markdown("## 📝 맞춤형 건축 민원 양식 자동완성")
+    st.caption("복잡한 민원 내용을 입력하면 AI가 용인시 행정 양식에 맞춰 문서를 정갈하게 작성해 드립니다.")
     st.divider()
 
     required_docs = {
@@ -453,12 +445,12 @@ elif st.session_state.current_page == "doc_gen":
             with st.spinner("서식 구조화 및 양식 작성 중..."):
                 try:
                     result = generate_civil_document(civil_type, site_address, civil_content)
-                    st.session_state.selected_index = None # 챗봇 히스토리 충돌 방지
+                    st.session_state.selected_index = None
                     st.toast("민원 양식이 성공적으로 생성되었습니다!", icon="🎉")
                     
                     st.divider()
                     st.subheader("📄 생성된 민원서")
-                    st.markdown(f"<div style='padding:20px; border:1px solid #ddd; border-radius:8px; background:rgba(0,0,0,0.02);'>{result}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='padding:20px; border:1px solid #ddd; border-radius:12px; background:rgba(150,150,150,0.05);'>{result}</div>", unsafe_allow_html=True)
                     
                     info_tabs = st.tabs(["📎 필요 서류", "🏢 담당 부서", "🏛️ 접수 절차", "📥 파일 다운로드"])
                     
@@ -495,20 +487,15 @@ elif st.session_state.current_page == "doc_gen":
 
 # --- 💡 3. Q&A 게시판 ---
 elif st.session_state.current_page == "qna":
-    st.title("💡 커뮤니티 Q&A")
-    
-    st.image(
-        "https://images.unsplash.com/photo-1455390582262-044cdead277a?q=80&w=2073&auto=format&fit=crop",
-        use_container_width=True
-    )
-    
-    st.write("플랫폼 사용법이나 애매한 규제 해석에 대해 질문을 남겨주시면 관리자가 답변해 드립니다.")
+    st.markdown("## 💡 커뮤니티 Q&A")
+    st.caption("플랫폼 사용법이나 애매한 규제 해석에 대해 질문을 남겨주시면 전문가가 답변해 드립니다.")
+    st.divider()
     
     col1, col2 = st.columns([2, 1])
     with col1:
         st.subheader("📋 실시간 질문 목록")
         if not st.session_state.qna_list:
-            st.caption("등록된 질문이 없습니다. 첫 질문의 주인공이 되어보세요!")
+            st.info("등록된 질문이 없습니다. 첫 질문의 주인공이 되어보세요!")
         else:
             for i, q in enumerate(st.session_state.qna_list):
                 status_badge = "⏳ 답변대기" if q['status'] == "대기중" else "✅ 답변완료"
@@ -545,55 +532,59 @@ elif st.session_state.current_page == "qna":
 
 # --- 🗺️ 4. 사이트맵 ---
 elif st.session_state.current_page == "sitemap":
-    st.title("🗺️ 시스템 아키텍처 및 취급 데이터")
-    st.write("본 플랫폼은 클라우드 기반 AI 엔진과 최신 법률 DB를 연동하여 동작합니다.")
-    
-    architecture_html = """
-    <style>
-        .arch-container { background: linear-gradient(135deg, #0b459c 0%, #1a5fb4 100%); padding: 25px; border-radius: 16px; font-family: 'Pretendard', sans-serif; }
-        .arch-title { text-align: center; color: white; font-size: 24px; font-weight: 700; margin-bottom: 25px; letter-spacing: -0.5px; }
-        .arch-layer { background-color: rgba(255,255,255,0.95); border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
-        .layer-title { text-align: center; font-weight: 800; color: #1a5fb4; margin-bottom: 15px; font-size: 18px; border-bottom: 2px dashed #d1d5db; padding-bottom: 10px; }
-        .box-row { display: flex; justify-content: space-between; gap: 15px; }
-        .arch-box { flex: 1; background-color: #f0f4f8; border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px; text-align: center; font-size: 14px; font-weight: 700; color: #334155; transition: transform 0.2s; }
-        .arch-box:hover { transform: translateY(-3px); background-color: #e2e8f0; }
-        .arch-box span { display: block; font-size: 12px; font-weight: 500; color: #64748b; margin-top: 6px; }
-        .data-source-row { display: flex; justify-content: center; gap: 20px; margin-top: 15px; }
-        .data-source { background-color: white; border: 2px solid #e2e8f0; border-radius: 20px; padding: 8px 20px; font-size: 14px; font-weight: 700; color: #475569; }
-    </style>
-    <div class="arch-container">
-        <div class="arch-title">Legal AI Platform Architecture</div>
-        <div class="arch-layer">
-            <div class="layer-title">대국민 / 실무자 서비스 (UI Layer)</div>
-            <div class="box-row">
-                <div class="arch-box">🤖 AI 법률 검토<span>(자연어 질의응답)</span></div>
-                <div class="arch-box">📝 자동화 문서 생성<span>(민원양식/행정서류)</span></div>
-                <div class="arch-box">💡 커뮤니티<span>(FAQ & Q&A)</span></div>
-            </div>
-        </div>
-        <div class="arch-layer">
-            <div class="layer-title">AI 핵심 엔진 (Processing Layer)</div>
-            <div class="box-row">
-                <div class="arch-box">LLM 분석 모듈<span>(조항 매핑 및 논리 추론)</span></div>
-                <div class="arch-box">RAG 검색 시스템<span>(시맨틱 벡터 검색)</span></div>
-            </div>
-        </div>
-        <div class="arch-layer">
-            <div class="layer-title">데이터베이스 연동 (Data Layer)</div>
-            <div class="box-row">
-                <div class="arch-box">용인시/경기도 조례<span>(지역 특화 규제)</span></div>
-                <div class="arch-box">국토부 상위 법령<span>(118개 핵심 법률)</span></div>
-            </div>
-            <div class="data-source-row">
-                <div class="data-source">🏛️ 국가법령정보센터 API</div>
-                <div class="data-source">🗄️ 플랫폼 로컬 Vector DB</div>
-            </div>
-        </div>
-    </div>
-    """
-    st.components.v1.html(architecture_html, height=550) if hasattr(st, "components") else st.markdown(architecture_html, unsafe_allow_html=True)
-    
+    st.markdown("## 🗺️ 플랫폼 사이트맵 및 아키텍처")
+    st.caption("본 플랫폼은 클라우드 기반 AI 엔진과 최신 법률 DB를 연동하여 동작합니다.")
     st.divider()
+    
+    # 1. 사이트 트리 구성 (오류 없는 네이티브 마크다운)
+    st.subheader("📍 사이트 트리 (Site Tree)")
+    col_tree1, col_tree2 = st.columns(2)
+    
+    with col_tree1:
+        st.markdown("""
+        * **🏠 메인화면 (AI 챗봇)**
+            * 실시간 법령/조례 검토 시맨틱 엔진
+            * 대화 이력 관리 (조회, 검색, 삭제)
+            * 건축물 상태 저장소 (주소 연동, 대지 정보 관리)
+        * **📝 민원 양식 자동생성**
+            * 민원 유형별 필수 서류 안내
+            * 담당 부서 및 접수 절차 안내
+            * AI 맞춤형 민원서 자동 작성 및 DOCX 다운로드
+        """)
+        
+    with col_tree2:
+        st.markdown("""
+        * **💡 FAQ & Q&A 게시판**
+            * 실시간 커뮤니티 질의응답
+            * 관리자 전용 답변 처리 패널
+        * **🗺️ 플랫폼 사이트맵**
+            * 사이트 트리 및 시스템 아키텍처 안내
+            * 취급 법규 및 조례 DB 목록 조회
+        """)
+
+    st.divider()
+
+    # 2. 시스템 아키텍처 (HTML 충돌 없는 네이티브 컨테이너)
+    st.subheader("⚙️ 시스템 아키텍처")
+    col_arch1, col_arch2, col_arch3 = st.columns(3)
+    
+    with col_arch1:
+        with st.container(border=True):
+            st.markdown("#### 📱 UI Layer\n*(대국민 / 실무자 서비스)*")
+            st.markdown("- 🤖 AI 법률 검토 (자연어)\n- 📝 문서 생성 자동화\n- 💡 실시간 커뮤니티")
+            
+    with col_arch2:
+        with st.container(border=True):
+            st.markdown("#### 🧠 Processing Layer\n*(AI 핵심 엔진)*")
+            st.markdown("- 🔍 LLM 기반 조항 분석\n- 🧩 RAG 시맨틱 벡터 검색\n- ⚖️ 논리 추론 및 매핑")
+            
+    with col_arch3:
+        with st.container(border=True):
+            st.markdown("#### 🗄️ Data Layer\n*(데이터베이스 연동)*")
+            st.markdown("- 🏛️ 국가법령정보센터 API\n- 📂 플랫폼 로컬 Vector DB\n- 📜 125+ 상위법 및 조례")
+
+    st.divider()
+    
     with st.expander("📚 취급 법규 전체 목록 보기", expanded=True):
         st.caption("※ 탭을 클릭하여 종류별 법규를 확인하세요.")
         tabs = st.tabs(["🏛️ 지역 조례 (7개)", "📜 주요 상위법", "🔗 위임 법규"])
