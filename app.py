@@ -301,36 +301,36 @@ with st.sidebar:
                             st.toast("상단 고정 상태가 변경되었습니다.", icon="📌")
                             st.rerun()
 
-        st.divider()
-
-        # 3. 삭제
-        if st.button("🗑️ 삭제", key=f"del_btn_{actual_index}", use_container_width=True):
-            st.session_state.chat_history.pop(actual_index)
-
-            from storage import save_history
-            save_history(st.session_state.chat_history, st.session_state.user_id)
-
-            if st.session_state.selected_index == actual_index:
-                st.session_state.selected_index = None
-            elif (
-                st.session_state.selected_index is not None
-                and st.session_state.selected_index > actual_index
-            ):
-                st.session_state.selected_index -= 1
-
-            st.toast("대화가 삭제되었습니다.", icon="🗑️")
-            st.rerun()
-        else:
-            st.caption("기록된 이력이 비어있습니다.")
-
-    if st.session_state.chat_history:
-        if st.button("🗑️ 전체 세션 아카이브 초기화", type="secondary", use_container_width=True):
-            st.session_state.chat_history = []
-            st.session_state.selected_index = None
-            from storage import clear_history
-            clear_history(st.session_state.user_id) 
-            st.toast("저장된 모든 아카이브가 정상 소거되었습니다.")
-            st.rerun()
+                    st.divider()
+            
+                    # 3. 삭제
+                    if st.button("🗑️ 삭제", key=f"del_btn_{actual_index}", use_container_width=True):
+                        st.session_state.chat_history.pop(actual_index)
+            
+                        from storage import save_history
+                        save_history(st.session_state.chat_history, st.session_state.user_id)
+            
+                        if st.session_state.selected_index == actual_index:
+                            st.session_state.selected_index = None
+                        elif (
+                            st.session_state.selected_index is not None
+                            and st.session_state.selected_index > actual_index
+                        ):
+                            st.session_state.selected_index -= 1
+            
+                        st.toast("대화가 삭제되었습니다.", icon="🗑️")
+                        st.rerun()
+                    else:
+                        st.caption("기록된 이력이 비어있습니다.")
+            
+                if st.session_state.chat_history:
+                    if st.button("🗑️ 전체 세션 아카이브 초기화", type="secondary", use_container_width=True):
+                        st.session_state.chat_history = []
+                        st.session_state.selected_index = None
+                        from storage import clear_history
+                        clear_history(st.session_state.user_id) 
+                        st.toast("저장된 모든 아카이브가 정상 소거되었습니다.")
+                        st.rerun()
 
 
 # ==========================================
