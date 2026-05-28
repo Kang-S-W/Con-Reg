@@ -44,12 +44,11 @@ def sync_dark_mode():
     st.session_state.dark_mode = st.session_state.dark_mode_toggle
 
 # ==========================================
-# 3. 프리미엄 CSS 스타일링 (SaaS 룩앤필 & 가시성 개선)
+# 3. 프리미엄 CSS 스타일링 (SaaS 룩앤필 & 가시성 완벽 개선)
 # ==========================================
 apply_custom_style(st.session_state.dark_mode) 
 
 def apply_premium_ui(is_dark):
-    # ChatGPT, Claude 스타일의 모던/플랫 디자인 적용
     base_css = """
 <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -88,22 +87,15 @@ def apply_premium_ui(is_dark):
         transition: all 0.2s ease !important;
     }
     div[data-testid="stButton"] button:active { transform: scale(0.98); }
-    
-    /* Expander 디자인 */
-    div[data-testid="stExpander"] {
-        border-radius: 12px !important;
-        box-shadow: none !important;
-        margin-bottom: 12px !important;
-    }
 </style>
 """
-    # 라이트/다크 모드 글씨 안보임 현상을 완벽히 해결한 테마 분기
+    # 라이트/다크 모드 글씨 안보임 현상(Expander 등)을 완벽히 해결한 테마 분기
     if is_dark:
         theme_css = """
 <style>
     [data-testid="stAppViewContainer"] { background-color: #212121 !important; color: #ECECEC !important; }
     [data-testid="stHeader"] { background-color: transparent !important; }
-    [data-testid="stSidebar"] { background-color: #171717 !important; border-right: 1px solid #333 !important; }
+    [data-testid="stSidebar"], [data-testid="stSidebar"] > div { background-color: #171717 !important; border-right: 1px solid #333 !important; }
     
     div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div { background-color: #2F2F2F !important; border: 1px solid #444 !important; }
     div[data-baseweb="input"] input, div[data-baseweb="textarea"] textarea { color: #FFF !important; }
@@ -111,10 +103,11 @@ def apply_premium_ui(is_dark):
     div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button { background-color: #2F2F2F !important; color: #ECECEC !important; border: 1px solid #444 !important; }
     div[data-testid="stButton"] button:hover { background-color: #3A3A3A !important; border-color: #555 !important; }
     
-    div[data-testid="stExpander"] { background-color: #171717 !important; border: 1px solid #333 !important; }
-    div[data-testid="stExpander"] details summary { color: #ECECEC !important; }
+    /* Expander 강제 덮어쓰기 (다크) */
+    div[data-testid="stExpander"] { background-color: #1F1F1F !important; border: 1px solid #333 !important; border-radius: 12px !important; }
+    div[data-testid="stExpander"] details summary, div[data-testid="stExpander"] details summary p { color: #ECECEC !important; }
+    div[data-testid="stExpander"] details > div { background-color: #1F1F1F !important; color: #ECECEC !important; }
     
-    /* 기본 텍스트 요소가 배경에 묻히지 않도록 상위 컨테이너 컬러 강제 */
     .stMarkdown, .stText { color: #ECECEC !important; }
 </style>
 """
@@ -123,7 +116,7 @@ def apply_premium_ui(is_dark):
 <style>
     [data-testid="stAppViewContainer"] { background-color: #FFFFFF !important; color: #111111 !important; }
     [data-testid="stHeader"] { background-color: transparent !important; }
-    [data-testid="stSidebar"] { background-color: #F9F9F9 !important; border-right: 1px solid #E5E5E5 !important; }
+    [data-testid="stSidebar"], [data-testid="stSidebar"] > div { background-color: #F8F9FA !important; border-right: 1px solid #E5E5E5 !important; }
     
     div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div { background-color: #FFFFFF !important; border: 1px solid #E5E5E5 !important; }
     div[data-baseweb="input"] input, div[data-baseweb="textarea"] textarea { color: #111111 !important; }
@@ -131,8 +124,21 @@ def apply_premium_ui(is_dark):
     div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button { background-color: #FFFFFF !important; color: #333333 !important; border: 1px solid #E5E5E5 !important; }
     div[data-testid="stButton"] button:hover { background-color: #F0F0F0 !important; border-color: #D5D5D5 !important; }
     
-    div[data-testid="stExpander"] { background-color: #F9F9F9 !important; border: 1px solid #E5E5E5 !important; }
-    div[data-testid="stExpander"] details summary { color: #111111 !important; }
+    /* Expander 강제 덮어쓰기 (라이트) - 사진에서 발생한 오류 해결 */
+    div[data-testid="stExpander"], div[data-testid="stExpander"] > details { 
+        background-color: #FFFFFF !important; 
+        border: 1px solid #E5E5E5 !important; 
+        border-radius: 12px !important; 
+    }
+    div[data-testid="stExpander"] details summary, 
+    div[data-testid="stExpander"] details summary p { 
+        color: #111111 !important; 
+        background-color: #F8F9FA !important;
+    }
+    div[data-testid="stExpander"] details > div { 
+        background-color: #FFFFFF !important; 
+        color: #111111 !important; 
+    }
     
     .stMarkdown, .stText { color: #111111 !important; }
 </style>
@@ -182,12 +188,12 @@ def open_history_search_dialog():
                 st.markdown("---")
 
 # ==========================================
-# 4. 사이드바 구성 (그룹화 및 깔끔한 정리)
+# 4. 사이드바 구성
 # ==========================================
 with st.sidebar:
     st.title("플랫폼 제어")
     
-    # [인증 섹션]
+    # [인증 섹션] - 이제 라이트모드에서도 깔끔하게 잘 보입니다
     with st.expander("👤 실무자 시스템 인증", expanded=(st.session_state.user_id == "guest")):
         if st.session_state.user_id == "guest":
             auth_tabs = st.tabs(["로그인", "회원가입"])
@@ -290,7 +296,6 @@ with st.sidebar:
 # --- 🤖 1. 메인화면 ---
 if st.session_state.current_page == "main":
     
-    # 상단 헤더 깔끔하게 정리
     st.markdown("## 🏢 건축 조례 및 법령 해석 AI")
     st.caption("건축사, 시공사, 인허가 담당자의 신속한 의사결정을 돕는 심층 규제 분석 엔진입니다.")
     st.write("")
@@ -329,7 +334,6 @@ if st.session_state.current_page == "main":
                     st.session_state.selected_index = None
                     st.rerun()
             else:
-                # 이미지를 제거하고 모던한 안내 메시지로 대체
                 st.markdown("""
                 <div style='text-align: center; margin-top: 80px; margin-bottom: 40px;'>
                     <h2 style='color: #888; margin-bottom: 20px;'>어떤 규제를 검토해 드릴까요?</h2>
@@ -366,6 +370,7 @@ if st.session_state.current_page == "main":
             st.subheader("상태 저장소")
             st.caption("대지 및 건축물의 상태값으로, 답변에 참조됩니다.")
 
+            # 이제 라이트 모드에서도 정상적으로 글씨가 보입니다
             with st.expander("주소 기반 대지 정보 자동 연동", expanded=True):
                 search_addr = st.text_input("도로명 주소 입력", placeholder="예: 중부대로 1199", label_visibility="collapsed")
                 if st.button("데이터 연동", use_container_width=True):
@@ -536,7 +541,6 @@ elif st.session_state.current_page == "sitemap":
     st.caption("본 플랫폼은 클라우드 기반 AI 엔진과 최신 법률 DB를 연동하여 동작합니다.")
     st.divider()
     
-    # 1. 사이트 트리 구성 (오류 없는 네이티브 마크다운)
     st.subheader("📍 사이트 트리 (Site Tree)")
     col_tree1, col_tree2 = st.columns(2)
     
@@ -563,39 +567,56 @@ elif st.session_state.current_page == "sitemap":
         """)
 
     st.divider()
-
-    # 2. 시스템 아키텍처 (HTML 충돌 없는 네이티브 컨테이너)
-    st.subheader("⚙️ 시스템 아키텍처")
-    col_arch1, col_arch2, col_arch3 = st.columns(3)
     
-    with col_arch1:
-        with st.container(border=True):
-            st.markdown("#### 📱 UI Layer\n*(대국민 / 실무자 서비스)*")
-            st.markdown("- 🤖 AI 법률 검토 (자연어)\n- 📝 문서 생성 자동화\n- 💡 실시간 커뮤니티")
-            
-    with col_arch2:
-        with st.container(border=True):
-            st.markdown("#### 🧠 Processing Layer\n*(AI 핵심 엔진)*")
-            st.markdown("- 🔍 LLM 기반 조항 분석\n- 🧩 RAG 시맨틱 벡터 검색\n- ⚖️ 논리 추론 및 매핑")
-            
-    with col_arch3:
-        with st.container(border=True):
-            st.markdown("#### 🗄️ Data Layer\n*(데이터베이스 연동)*")
-            st.markdown("- 🏛️ 국가법령정보센터 API\n- 📂 플랫폼 로컬 Vector DB\n- 📜 125+ 상위법 및 조례")
-
-    st.divider()
-    
+    # --- 요청하신 4가지 탭 및 데이터 매핑 ---
     with st.expander("📚 취급 법규 전체 목록 보기", expanded=True):
         st.caption("※ 탭을 클릭하여 종류별 법규를 확인하세요.")
-        tabs = st.tabs(["🏛️ 지역 조례 (7개)", "📜 주요 상위법", "🔗 위임 법규"])
         
+        # 4개의 탭 생성
+        tabs = st.tabs(["🏛️ 조례", "📜 법령", "🔗 조례의 차용 법규", "🔗 법령의 차용 법규"])
+        
+        # 1. 조례 리스트
         with tabs[0]:
             df_ord = pd.DataFrame([
-                ["경기도", "경기도 건축 조례", "건축법"], ["경기도", "경기도 건축기본조례", "건축기본법"],
-                ["용인시", "용인시 건축 조례", "건축법"], ["용인시", "용인시 도시계획 조례", "국토계획법"]
-            ], columns=["지자체", "조례명", "근거법률"])
+                ["경기도", "경기도 건축 조례"],
+                ["경기도", "경기도 건축기본조례"],
+                ["경기도", "경기도 건축물 미술작품 설치 및 관리에 관한 조례"],
+                ["경기도", "경기도 건축물관리 조례"],
+                ["용인시", "용인시 건축 조례"],
+                ["용인시", "용인시 건축물관리 조례"],
+                ["용인시", "용인시 도시계획 조례"]
+            ], columns=["분류", "조례명"])
             st.dataframe(df_ord, hide_index=True, use_container_width=True)
+
+        # 2. 법령 리스트
         with tabs[1]:
-            st.write("✔️ 건축법 / 시행령 / 시행규칙 \n✔️ 국토의 계획 및 이용에 관한 법률 \n✔️ 건축물관리법")
+            df_law = pd.DataFrame([
+                ["건축법"], ["건축기본법"], ["문화예술진흥법"], ["건축물관리법"], ["국토의 계획 및 이용에 관한 법률"],
+                ["건축법 시행령"], ["건축기본법 시행령"], ["문화예술진흥법 시행령"], ["건축물관리법 시행령"], ["국토의 계획 및 이용에 관한 법률 시행령"],
+                ["건축법 시행규칙"], ["건축물관리법 시행규칙"], ["국토의 계획 및 이용에 관한 법률 시행규칙"]
+            ], columns=["법령명"])
+            st.dataframe(df_law, hide_index=True, use_container_width=True)
+
+        # 3. 조례의 차용 법규
         with tabs[2]:
-            st.write("총 100여 개의 조례 및 상위법 위임 하위 법규(건설기술진흥법, 농지법, 주택법 등) 데이터를 교차 검증합니다.")
+            df_ord_borrow = pd.DataFrame([
+                ["감정평가 및 감정평가사에 관한 법률"], ["건설기술진흥법"], ["건축기본법"], ["건축물관리법"], 
+                ["건축법"], ["건축사법"], ["고등교육법"], ["공공주택 특별법"], ["관광진흥법"], 
+                ["국가유산기본법"], ["국토의 계획 및 이용에 관한 법률"], ["근현대문화유산의 보존 및 활용에 관한 법률"], 
+                ["녹색건축물 조성 지원법"], ["농지법"], ["대기환경보전법"], ["도시 및 주거환경정비법"], 
+                ["문화예술진흥법"], ["민간임대주택에 관한 특별법"], ["산업입지 및 개발에 관한 법률"], 
+                ["산업집적활성화 및 공장설립에 관한 법률"]
+            ], columns=["차용 법규명 (조례 기반)"])
+            st.dataframe(df_ord_borrow, hide_index=True, use_container_width=True)
+
+        # 4. 법령의 차용 법규
+        with tabs[3]:
+            df_law_borrow = pd.DataFrame([
+                ["건설기술 진흥법"], ["건설산업기본법"], ["건축기본법"], ["건축법"], ["건축사법"], 
+                ["경관법"], ["고등교육법"], ["공간정보의 구축 및 관리 등에 관한 법률"], 
+                ["공공기관의 운영에 관한 법률"], ["공공주택 특별법"], ["공동주택관리법"], 
+                ["공유재산 및 물품 관리법"], ["공익사업을 위한 토지 등의 취득 및 보상에 관한 법률"], 
+                ["관광진흥법"], ["국가기술자격법"], ["국가유산기본법"], ["국유재산법"], 
+                ["국토안전관리원법"], ["국토의 계획 및 이용에 관한 법률"], ["기술사법"]
+            ], columns=["차용 법규명 (법령 기반)"])
+            st.dataframe(df_law_borrow, hide_index=True, use_container_width=True)
