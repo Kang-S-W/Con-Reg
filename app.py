@@ -257,27 +257,106 @@ with st.sidebar:
     history_container = st.container(height=400, border=False)
     with history_container:
         if st.session_state.chat_history:
-            for i, chat in enumerate(reversed(st.session_state.chat_history)):
-                actual_index = len(st.session_state.chat_history) - 1 - i
+            # 기존 대화에 고유 id가 없으면 한 번만 부여
+            id_changed = False
+            for chat in st.session_state.chat_history:
+                if "id" not in chat:
+                    chat["id"] = str(uuid.uuid4())
+                    id_changed = True
+
+            if id_changed:
+                save_history(st.session_state.chat_history, st.session_state.user_id)
+
+            history_items = list(enumerate(st.session_state.chat_history))
+            history_items = sorted(
+                history_items,
+                key=lambda item: (
+                    item[1].get("pinned", False),
+                    item[1].get("updated_at", item[1].get("created_at", ""))
+                ),
+                reverse=True
+            )
+
+            for actual_index, chat in history_items:
+                chat_id = chat["id"]
+
                 time_str = chat.get("updated_at", chat.get("created_at", "00-00 00:00"))[5:16]
-                query_summary = chat.get("title", "질의 데이터")[:11] + ".."
-                
-                col_btn, col_del = st.columns([82, 18])
+
+                title = chat.get("title", "질의 데이터")
+                is_pinned = chat.get("pinned", False)
+
+                pin_mark = "📌 " if is_pinned else ""
+                query_summary = title[:11] + ".." if len(title) > 11 else title
+
+                col_btn, col_menu = st.columns([82, 18])
+
                 with col_btn:
-                    if st.button(f"⏱️ {time_str} | {query_summary}", key=f"hist_{actual_index}", use_container_width=True):
+                    if st.button(
+                        f"{pin_mark}⏱️ {time_str} | {query_summary}",
+                        key=f"hist_btn_{chat_id}",
+                        use_container_width=True
+                    ):
                         st.session_state.selected_index = actual_index
                         st.session_state.current_page = "main"
                         st.rerun()
-                with col_del:
-                    if st.button("❌", key=f"del_{actual_index}", use_container_width=True, help="삭제"):
-                        st.session_state.chat_history.pop(actual_index)
-                        from storage import save_history
-                        save_history(st.session_state.chat_history, st.session_state.user_id)
-                        if st.session_state.selected_index == actual_index:
-                            st.session_state.selected_index = None
-                        elif st.session_state.selected_index is not None and st.session_state.selected_index > actual_index:
-                            st.session_state.selected_index -= 1
-                        st.rerun()
+
+                with col_menu:
+                    with st.popover(
+                        "⋯",
+                        use_container_width=True,
+                        help=f"대화 관리 {chat_id}"
+                    ):
+                        new_title = st.text_input(
+                            "이름 변경",
+                            value=title,
+                            key=f"sidebar_rename_title_{chat_id}"
+                        )
+
+                        if st.button(
+                            "이름 저장",
+                            key=f"sidebar_save_title_{chat_id}",
+                            use_container_width=True
+                        ):
+                            st.session_state.chat_history[actual_index]["title"] = new_title.strip() or "질의 데이터"
+
+                            save_history(st.session_state.chat_history, st.session_state.user_id)
+
+                            st.toast("대화 이름이 변경되었습니다.")
+                            st.rerun()
+
+                        pin_label = "📌 핀 해제" if is_pinned else "📌 핀 고정"
+
+                        if st.button(
+                            pin_label,
+                            key=f"sidebar_toggle_pin_{chat_id}",
+                            use_container_width=True
+                        ):
+                            st.session_state.chat_history[actual_index]["pinned"] = not is_pinned
+
+                            save_history(st.session_state.chat_history, st.session_state.user_id)
+
+                            st.toast("핀 상태가 변경되었습니다.")
+                            st.rerun()
+
+                        if st.button(
+                            "🗑️ 삭제",
+                            key=f"sidebar_delete_chat_{chat_id}",
+                            use_container_width=True
+                        ):
+                            st.session_state.chat_history.pop(actual_index)
+
+                            if st.session_state.selected_index == actual_index:
+                                st.session_state.selected_index = None
+                            elif (
+                                st.session_state.selected_index is not None
+                                and st.session_state.selected_index > actual_index
+                            ):
+                                st.session_state.selected_index -= 1
+
+                            save_history(st.session_state.chat_history, st.session_state.user_id)
+
+                            st.toast("대화가 삭제되었습니다.")
+                            st.rerun()
         else:
             st.caption("기록된 이력이 비어있습니다.")
 
