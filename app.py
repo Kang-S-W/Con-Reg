@@ -268,69 +268,126 @@ with st.sidebar:
                         st.session_state.selected_index = actual_index
                         st.session_state.current_page = "main"
                         st.rerun()
+    history_container = st.container(height=400, border=False)
+    with history_container:
+        if st.session_state.chat_history:
+            history_items = list(enumerate(st.session_state.chat_history))
+            history_items = sorted(
+                history_items,
+                key=lambda item: (
+                    item[1].get("pinned", False),
+                    item[1].get("updated_at", item[1].get("created_at", ""))
+                ),
+                reverse=True
+            )
+
+            for actual_index, chat in history_items:
+                time_str = chat.get("updated_at", chat.get("created_at", "00-00 00:00"))[5:16]
+
+                title = chat.get("title", "질의 데이터")
+                is_pinned = chat.get("pinned", False)
+
+                pin_mark = "📌 " if is_pinned else ""
+                query_summary = title[:11] + ".." if len(title) > 11 else title
+
+                col_btn, col_del = st.columns([82, 18])
+
+                with col_btn:
+                    if st.button(
+                        f"{pin_mark}⏱️ {time_str} | {query_summary}",
+                        key=f"hist_{actual_index}",
+                        use_container_width=True
+                    ):
+                        st.session_state.selected_index = actual_index
+                        st.session_state.current_page = "main"
+                        st.rerun()
+
                 with col_del:
-                    with st.popover("⋯", use_container_width=True):
+                    menu_label = "⋯" + ("\u200b" * actual_index)
+
+                    with st.popover(menu_label, use_container_width=True):
                         st.markdown("##### 대화 관리")
-                
+
                         # 1. 이름 바꾸기
                         new_title = st.text_input(
                             "새 이름",
-                            value=chat.get("title", "질의 데이터"),
+                            value=title,
                             key=f"rename_input_{actual_index}"
                         )
-                
-                        if st.button("이름 바꾸기", key=f"rename_btn_{actual_index}", use_container_width=True):
+
+                        if st.button(
+                            "이름 바꾸기",
+                            key=f"rename_btn_{actual_index}",
+                            use_container_width=True
+                        ):
                             new_title = new_title.strip()
+
                             if new_title:
                                 st.session_state.chat_history[actual_index]["title"] = new_title
+
                                 from storage import save_history
                                 save_history(st.session_state.chat_history, st.session_state.user_id)
+
                                 st.toast("대화 이름이 변경되었습니다.", icon="✏️")
                                 st.rerun()
                             else:
                                 st.warning("이름을 비워둘 수 없습니다.")
-                
+
                         # 2. 상단 고정
                         is_pinned = st.session_state.chat_history[actual_index].get("pinned", False)
                         pin_label = "상단 고정 해제" if is_pinned else "상단 고정"
-                
-                        if st.button(f"📌 {pin_label}", key=f"pin_btn_{actual_index}", use_container_width=True):
+
+                        if st.button(
+                            f"📌 {pin_label}",
+                            key=f"pin_btn_{actual_index}",
+                            use_container_width=True
+                        ):
                             st.session_state.chat_history[actual_index]["pinned"] = not is_pinned
+
                             from storage import save_history
                             save_history(st.session_state.chat_history, st.session_state.user_id)
+
                             st.toast("상단 고정 상태가 변경되었습니다.", icon="📌")
                             st.rerun()
 
-                    st.divider()
-            
-                    # 3. 삭제
-                    if st.button("🗑️ 삭제", key=f"del_btn_{actual_index}", use_container_width=True):
-                        st.session_state.chat_history.pop(actual_index)
-            
-                        from storage import save_history
-                        save_history(st.session_state.chat_history, st.session_state.user_id)
-            
-                        if st.session_state.selected_index == actual_index:
-                            st.session_state.selected_index = None
-                        elif (
-                            st.session_state.selected_index is not None
-                            and st.session_state.selected_index > actual_index
+                        st.divider()
+
+                        # 3. 삭제 — 반드시 popover 안쪽
+                        if st.button(
+                            "🗑️ 삭제",
+                            key=f"del_btn_{actual_index}",
+                            use_container_width=True
                         ):
-                            st.session_state.selected_index -= 1
-            
-                        st.toast("대화가 삭제되었습니다.", icon="🗑️")
-                        st.rerun()
-                    else:
-                        st.caption("기록된 이력이 비어있습니다.")
-            
-                if st.session_state.chat_history:
-                    if st.button("🗑️ 전체 세션 아카이브 초기화", type="secondary", use_container_width=True):
-                        st.session_state.chat_history = []
-                        st.session_state.selected_index = None
-                        from storage import clear_history
-                        clear_history(st.session_state.user_id) 
-                        st.toast("저장된 모든 아카이브가 정상 소거되었습니다.")
-                        st.rerun()
+                            st.session_state.chat_history.pop(actual_index)
+
+                            from storage import save_history
+                            save_history(st.session_state.chat_history, st.session_state.user_id)
+
+                            if st.session_state.selected_index == actual_index:
+                                st.session_state.selected_index = None
+                            elif (
+                                st.session_state.selected_index is not None
+                                and st.session_state.selected_index > actual_index
+                            ):
+                                st.session_state.selected_index -= 1
+
+                            st.toast("대화가 삭제되었습니다.", icon="🗑️")
+                            st.rerun()
+
+        else:
+            st.caption("기록된 이력이 비어있습니다.")
+
+    # 전체 삭제 버튼 — 반드시 history_container 밖, for문 밖, popover 밖
+    if st.session_state.chat_history:
+        if st.button("🗑️ 전체 세션 아카이브 초기화", type="secondary", use_container_width=True):
+            st.session_state.chat_history = []
+            st.session_state.selected_index = None
+
+            from storage import clear_history
+            clear_history(st.session_state.user_id)
+
+            st.toast("저장된 모든 아카이브가 정상 소거되었습니다.")
+            st.rerun()
 
 
 # ==========================================
