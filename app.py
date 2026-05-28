@@ -312,7 +312,8 @@ if st.session_state.current_page == "main":
 
     col_top_left, col_top_right = st.columns([3, 1])
     with col_top_right:
-        show_state_panel = st.toggle("상태 저장소 패널 켜기", value=True)
+        # 💡 핵심 수정: processor.py와 통신하기 위한 고유 이름표(key="use_state_panel") 추가
+        show_state_panel = st.toggle("상태 저장소 패널 켜기", value=True, key="use_state_panel")
 
     # 토글 상태에 따른 메인 화면 동적 분할
     if show_state_panel:
