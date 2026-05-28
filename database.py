@@ -98,7 +98,7 @@ def get_ordinance_data(query, semantic_tags=""):
                         processed_sources.add(name)
                         total_density_score += 15 
                     
-                    if total_density_score >= 80: break 
+                    if total_density_score >= 300: break 
     
     status = "COMPLETE" if total_density_score >= SATISFACTION_THRESHOLD else "INCOMPLETE"
     return status, "\n\n---\n\n".join(final_context)
