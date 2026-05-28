@@ -269,10 +269,10 @@ with st.sidebar:
     st.divider()
     
     # [대화 세션 히스토리 인터페이스]
-    st.subheader("최근 대화 기록")
+    st.subheader("최근 대화 목록")
     c_new, c_src = st.columns(2)
     with c_new:
-        if st.button("새 대화", use_container_width=True, type="primary"):
+        if st.button("새 대화 시작", use_container_width=True, type="primary"):
             st.session_state.selected_index = None
             st.session_state.current_page = "main"
             st.rerun()
@@ -286,24 +286,13 @@ with st.sidebar:
             for i, chat in enumerate(reversed(st.session_state.chat_history)):
                 actual_index = len(st.session_state.chat_history) - 1 - i
                 time_str = chat.get("updated_at", chat.get("created_at", "00-00 00:00"))[5:16]
-                query_summary = chat.get("title", "대화 주제")[:11] + ".."
+                query_summary = chat.get("title", "대화 주제")[:14] + ".."
                 
-                col_btn, col_del = st.columns([75, 25])
-                with col_btn:
-                    if st.button(f"{time_str} | {query_summary}", key=f"hist_{actual_index}", use_container_width=True):
-                        st.session_state.selected_index = actual_index
-                        st.session_state.current_page = "main"
-                        st.rerun()
-                with col_del:
-                    if st.button("삭제", key=f"del_{actual_index}", use_container_width=True, help="기록 삭제"):
-                        st.session_state.chat_history.pop(actual_index)
-                        from storage import save_history
-                        save_history(st.session_state.chat_history, st.session_state.user_id)
-                        if st.session_state.selected_index == actual_index:
-                            st.session_state.selected_index = None
-                        elif st.session_state.selected_index is not None and st.session_state.selected_index > actual_index:
-                            st.session_state.selected_index -= 1
-                        st.rerun()
+                # 중첩 컬럼 제약을 완전히 우회하여 구버전 호환성 확보 및 가독성 증대
+                if st.button(f"{time_str} | {query_summary}", key=f"hist_{actual_index}", use_container_width=True):
+                    st.session_state.selected_index = actual_index
+                    st.session_state.current_page = "main"
+                    st.rerun()
         else:
             st.caption("기록된 이력이 없습니다.")
 
@@ -357,22 +346,30 @@ if st.session_state.current_page == "main":
                     render_user_message(msg.get("query", ""))
                     render_ai_report(msg.get("response", ""))
                 
+                # 실무형 대화방 관리 기능 추가 (중첩 레이아웃 완전 배제형)
+                st.markdown("---")
+                if st.button("현재 활성화된 대화방 기록 삭제", use_container_width=True, type="secondary"):
+                    st.session_state.chat_history.pop(st.session_state.selected_index)
+                    from storage import save_history
+                    save_history(st.session_state.chat_history, st.session_state.user_id)
+                    st.session_state.selected_index = None
+                    st.toast("현재 대화방이 안전하게 삭제되었습니다.")
+                    st.rerun()
+                    
                 if st.button("현재 대화 종료 후 새 대화 시작", use_container_width=True):
                     st.session_state.selected_index = None
                     st.rerun()
             else:
                 st.markdown("""
-                <div style='text-align: center; padding: 60px 20px;'>
+                <div style='text-align: center; padding: 40px 20px;'>
                     <h3 style='color: #4A90E2; font-weight:600; margin-bottom: 12px;'>검토할 건축 규제 내용을 입력해 주세요</h3>
                     <p style='color: #777; font-size: 14px;'>상위 건축법령 및 자치법규를 분석하여 명확한 유권해석 기준을 제시합니다.</p>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                c_info1, c_info2 = st.columns(2)
-                with c_info1:
-                    st.info("**예시:** 용인시 기흥구 상업지역 용적률 완화 적용 범위")
-                with c_info2:
-                    st.info("**예시:** 대지 안의 공지 규정에 따른 이격거리 예외 기준")
+                # 중첩 컬럼(st.columns) 에러 발생의 원인이 된 코드를 단일 직관 표기 형식으로 안전하게 우회 변경
+                st.info("**검토 예시 1:** 용인시 기흥구 상업지역 용적률 완화 적용 범위")
+                st.info("**검토 예시 2:** 대지 안의 공지 규정에 따른 이격거리 예외 기준")
 
         if user_query:
             render_user_message(user_query)
@@ -789,7 +786,7 @@ body{
 
     with tabs[1]:
         df_law = pd.DataFrame([
-            ["건축법"], ["text기본법"], ["문화예술진흥법"], ["건축물관리법"], ["국토의 계획 및 이용에 관한 법률"],
+            ["건축법"], ["건축기본법"], ["문화예술진흥법"], ["건축물관리법"], ["국토의 계획 및 이용에 관한 법률"],
             ["건축법 시행령"], ["건축기본법 시행령"], ["문화예술진흥법 시행령"], ["건축물관리법 시행령"], ["국토의 계획 및 이용에 관한 법률 시행령"],
             ["건축법 시행규칙"], ["건축물관리법 시행규칙"], ["국토의 계획 및 이용에 관한 법률 시행규칙"]
         ], columns=["대한민국 헌정 법령 및 시행령/시행규칙 명칭"])
