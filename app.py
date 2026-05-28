@@ -8,6 +8,7 @@ import base64
 import os
 import io
 import uuid
+import textwrap  # ✅ HTML 들여쓰기 제거를 위한 모듈 추가
 
 # ==========================================
 # 1. 페이지 설정 (최상단 고정)
@@ -108,8 +109,7 @@ def apply_premium_ui_v2(is_dark):
         theme_css = """
 <style>
     [data-testid="stAppViewContainer"] { background-color: #fcfcfc !important; color: #1e293b !important; }
-    [data-testid="stHeader"] { background-color: transparent !important; }
-    [data-testid="stSidebar"], [data-testid="stSidebar"] > div { background-color: #F8F9FA !important; border-right: 1px solid #E5E5E5 !important; }
+    [data-testid="stSidebar"], [data-testid="stSidebar"] > div { background-color: #f1f5f9 !important; border-right: 1px solid #e2e8f0 !important; }
     
     /* 채팅 입력창 크기 대폭 확장 및 테두리 시각화 강화 (라이트) */
     div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div, .stChatInput > div {
@@ -121,29 +121,24 @@ def apply_premium_ui_v2(is_dark):
     }
     div[data-baseweb="input"] > div:focus-within, div[data-baseweb="textarea"] > div:focus-within, .stChatInput:focus-within {
         border-color: #4a90e2 !important;
-        border: 2px solid #4a90e2 !important;
         box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2) !important;
     }
     div[data-baseweb="input"] input, div[data-baseweb="textarea"] textarea, .stChatInput textarea { color: #0f172a !important; font-size: 15px !important; }
     
     /* 라이트모드 가시성 전면 확보 조치 */
     div[data-testid="stExpander"], div[data-testid="stExpander"] > details { 
-        background-color: #FFFFFF !important; 
-        border: 1px solid #E5E5E5 !important; 
+        background-color: #ffffff !important; 
+        border: 1px solid #e2e8f0 !important; 
         border-radius: 12px !important; 
         box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
     }
     div[data-testid="stExpander"] details summary, 
     div[data-testid="stExpander"] details summary p { 
         color: #111111 !important; 
-        background-color: #F8F9FA !important;
+        background-color: #f8fafc !important;
         font-weight: 600 !important;
     }
-    div[data-testid="stExpander"] details > div { 
-        background-color: #FFFFFF !important; 
-        color: #111111 !important; 
-    }
-    
+    div[data-testid="stExpander"] details > div { background-color: #ffffff !important; color: #111111 !important; }
     .stMarkdown, .stText, label { color: #1e293b !important; }
 </style>
 """
@@ -196,36 +191,38 @@ def open_history_search_dialog():
 # 4. 구조화된 사이드바 시스템
 # ==========================================
 with st.sidebar:
-    st.title("플랫폼 제어")
+    st.markdown("<h2 style='text-align:center; font-weight:700; color:#4A90E2;'>Yong-In City</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center; font-size:13px; color:#888; margin-top:-10px;'>건축 조례 지능형 분석 플랫폼</p>", unsafe_allow_html=True)
+    st.divider()
     
-    # [인증 섹션]
-    with st.expander("👤 실무자 시스템 인증", expanded=(st.session_state.user_id == "guest")):
+    # [인증 인프라]
+    with st.expander("👤 실무자 권한 인증", expanded=(st.session_state.user_id == "guest")):
         if st.session_state.user_id == "guest":
-            auth_tabs = st.tabs(["로그인", "회원가입"])
+            auth_tabs = st.tabs(["로그인", "계정 생성"])
             with auth_tabs[0]:
                 login_id = st.text_input("아이디", key="login_id")
-                login_pw = st.text_input("비밀번호", type="password", key="login_pw")
-                if st.button("로그인", use_container_width=True):
+                login_pw = st.text_input("패스워드", type="password", key="login_pw")
+                if st.button("보안인증 로그인", use_container_width=True):
                     from storage import authenticate_user
                     if authenticate_user(login_id.strip(), login_pw.strip()):
                         st.session_state.user_id = login_id.strip()
                         st.session_state.chat_history = load_history(st.session_state.user_id)
-                        st.toast(f"환영합니다, {st.session_state.user_id}님!", icon="👋")
+                        st.toast(f"환영합니다, {st.session_state.user_id} 주무관님.", icon="👋")
                         st.rerun()
                     else:
-                        st.error("정보가 일치하지 않습니다.")
+                        st.error("인증 자격 증명이 불일치합니다.")
             with auth_tabs[1]:
-                reg_id = st.text_input("새 아이디", key="reg_id")
-                reg_pw = st.text_input("비밀번호", type="password", key="reg_pw")
-                if st.button("가입하기", use_container_width=True):
+                reg_id = st.text_input("신규 생성 아이디", key="reg_id")
+                reg_pw = st.text_input("신규 패스워드", type="password", key="reg_pw")
+                if st.button("권한 신청 및 생성", use_container_width=True):
                     from storage import check_id_exists, register_user
                     if check_id_exists(reg_id.strip()):
-                        st.error("이미 존재하는 아이디입니다.")
+                        st.error("이미 사용 중인 식별자입니다.")
                     elif register_user(reg_id.strip(), reg_pw.strip()):
-                        st.toast("가입 성공! 로그인해주세요.", icon="✅")
+                        st.toast("사용자 계정이 생성되었습니다. 로그인을 시도하세요.", icon="✅")
         else:
-            st.success(f"현재 접속: **{st.session_state.user_id}**")
-            if st.button("안전 로그아웃", use_container_width=True):
+            st.markdown(f"접속 세션: <span style='color:#4A90E2; font-weight:bold;'>{st.session_state.user_id}</span>", unsafe_allow_html=True)
+            if st.button("시스템 로그아웃", use_container_width=True, type="secondary"):
                 st.session_state.user_id = "guest"
                 st.session_state.chat_history = load_history("guest")
                 st.session_state.selected_index = None
@@ -233,64 +230,63 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # [메뉴 내비게이션]
-    st.subheader("📌 메인 메뉴")
-    if st.button("🏠 메인화면 (AI 챗봇)", use_container_width=True): st.session_state.current_page = "main"; st.rerun()
-    if st.button("📝 민원 양식 자동생성", use_container_width=True): st.session_state.current_page = "doc_gen"; st.rerun()
-    if st.button("💡 FAQ & Q&A 게시판", use_container_width=True): st.session_state.current_page = "qna"; st.rerun()
-    if st.button("🗺️ 플랫폼 사이트맵", use_container_width=True): st.session_state.current_page = "sitemap"; st.rerun()
+    # [내비게이션 모듈 - 직관성 개선]
+    st.subheader("📋 핵심 메뉴")
+    if st.button("🏠 메인 엔진 (AI 심층 질의)", use_container_width=True): st.session_state.current_page = "main"; st.rerun()
+    if st.button("📝 민원 서식 행정 자동완성", use_container_width=True): st.session_state.current_page = "doc_gen"; st.rerun()
+    if st.button("💡 실무 교차 검증 Q&A", use_container_width=True): st.session_state.current_page = "qna"; st.rerun()
+    if st.button("🗺️ 플랫폼 데이터 사이트맵", use_container_width=True): st.session_state.current_page = "sitemap"; st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.toggle("🌙 다크 모드", key="dark_mode_toggle", on_change=sync_dark_mode)
-    st.markdown("---")
+    st.toggle("🌙 다크 테마 적용", key="dark_mode_toggle", on_change=sync_dark_mode)
+    st.divider()
     
-    # [대화 이력 섹션]
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("➕ 새 대화", use_container_width=True):
+    # [대화 세션 히스토리 인터페이스]
+    st.subheader("📂 최근 대화 아카이브")
+    c_new, c_src = st.columns(2)
+    with c_new:
+        if st.button("➕ 새 대화방", use_container_width=True, type="primary"):
             st.session_state.selected_index = None
             st.session_state.current_page = "main"
             st.rerun()
-    with col2:
-        if st.button("🔍 검색", use_container_width=True):
+    with c_src:
+        if st.button("🔍 인덱스 검색", use_container_width=True):
             open_history_search_dialog()
 
-    st.subheader("대화 이력")
-    history_container = st.container(height=350, border=False)
+    history_container = st.container(height=400, border=False)
     with history_container:
         if st.session_state.chat_history:
             for i, chat in enumerate(reversed(st.session_state.chat_history)):
                 actual_index = len(st.session_state.chat_history) - 1 - i
                 time_str = chat.get("updated_at", chat.get("created_at", "00-00 00:00"))[5:16]
-                query_summary = chat.get("title", "새 대화")[:12] + ".."
+                query_summary = chat.get("title", "질의 데이터")[:11] + ".."
                 
-                col_btn, col_del = st.columns([8, 2])
+                col_btn, col_del = st.columns([82, 18])
                 with col_btn:
-                    if st.button(f"조회 {time_str} | {query_summary}", key=f"hist_{actual_index}", use_container_width=True):
+                    if st.button(f"⏱️ {time_str} | {query_summary}", key=f"hist_{actual_index}", use_container_width=True):
                         st.session_state.selected_index = actual_index
                         st.session_state.current_page = "main"
                         st.rerun()
                 with col_del:
-                    if st.button("삭제", key=f"del_{actual_index}", use_container_width=True):
+                    if st.button("❌", key=f"del_{actual_index}", use_container_width=True, help="삭제"):
                         st.session_state.chat_history.pop(actual_index)
                         from storage import save_history
                         save_history(st.session_state.chat_history, st.session_state.user_id)
-                        
                         if st.session_state.selected_index == actual_index:
                             st.session_state.selected_index = None
                         elif st.session_state.selected_index is not None and st.session_state.selected_index > actual_index:
                             st.session_state.selected_index -= 1
                         st.rerun()
         else:
-            st.caption("저장된 기록이 없습니다.")
+            st.caption("기록된 이력이 비어있습니다.")
 
     if st.session_state.chat_history:
-        if st.button("🗑️ 전체 기록 삭제", type="primary", use_container_width=True):
+        if st.button("🗑️ 전체 세션 아카이브 초기화", type="secondary", use_container_width=True):
             st.session_state.chat_history = []
             st.session_state.selected_index = None
             from storage import clear_history
             clear_history(st.session_state.user_id) 
-            st.toast("모든 기록이 삭제되었습니다.", icon="🗑️")
+            st.toast("저장된 모든 아카이브가 정상 소거되었습니다.")
             st.rerun()
 
 
@@ -298,9 +294,8 @@ with st.sidebar:
 # 5. 비즈니스 로직 및 화면 분기 (Main)
 # ==========================================
 
-# --- 🤖 [화면 1] 메인화면 (AI 질의응답 엔진) ---
+# --- 🤖 [화면 1] 메인 인공지능 분석 엔진 ---
 if st.session_state.current_page == "main":
-    
     st.markdown("## 🏢 건축 조례 및 규제 법령 해석 AI 시스템")
     st.caption("용인시 전역의 자치조례 및 상위 상호 연계 법령을 연산하여 정밀한 예외 조건 및 규제 요약을 도출합니다.")
     st.write("")
@@ -488,10 +483,10 @@ elif st.session_state.current_page == "doc_gen":
                 except Exception as e:
                     st.error(f"예외 발생 알림: {str(e)}")
 
-# --- 💡 [화면 3] FAQ 및 실무 Q&A 게시판 ---
+# --- 💡 [화면 3] 전문가 교차 검증 Q&A 게시판 ---
 elif st.session_state.current_page == "qna":
-    st.markdown("## 💡 FAQ 및 실무 Q&A 게시판")
-    st.caption("건축 인허가 업무 중 반복되는 질의와 전문가의 유권해석 데이터를 공유합니다.")
+    st.markdown("## 💡 실무자 간 규제 해석 교차 검증 스페이스")
+    st.caption("인허가 과정에서 발생하는 모호한 사안에 대해 질문을 등록하고 답변을 공유합니다.")
     st.divider()
     
     col1, col2 = st.columns([65, 35])
@@ -501,16 +496,16 @@ elif st.session_state.current_page == "qna":
             st.info("현재 누적된 오픈 질의가 없습니다.")
         else:
             for i, q in enumerate(st.session_state.qna_list):
-                badge = "⏳ 접수 대기" if q['status'] == "대기중" else "✅ 유권해석 완료"
+                badge = "⏳ 접수 대기" if q['status'] == "대기중" else "✅ 검증 완료"
                 with st.expander(f"[{badge}] {q['title']}"):
                     st.markdown(f"**질의 요지:** {q['content']}")
                     if q['status'] == "답변완료":
-                        st.info(f"**행정 유권해석 답변:** {q['answer']}")
+                        st.info(f"**해석 공유 답변:** {q['answer']}")
     
     with col2:
         st.subheader("📝 질의서 상정")
         with st.form("qna_form_v2", clear_on_submit=True):
-            q_title = st.text_input("질의 안건 요약 명칭")
+            q_title = st.text_input("안건 요약 명칭")
             q_content = st.text_area("안건 정밀 세부조항 및 내용 기술")
             if st.form_submit_button("질문 안건 등록", use_container_width=True):
                 if q_title and q_content:
@@ -536,80 +531,78 @@ elif st.session_state.current_page == "qna":
 # --- 🗺️ [화면 4] 사이트맵 (시각적 아키텍처 다이어그램 및 데이터 테이블) ---
 elif st.session_state.current_page == "sitemap":
     st.markdown("## 🗺️ 플랫폼 구조 및 법률 아카이브 트리")
-    st.caption("플랫폼 엔진이 검사하는 데이터 구조의 설계 및 통합 업데이트된 취급 자치 조례와 상위 차용법령 전체 색인 일람입니다.")
+    st.caption("플랫폼 엔진이 검사하는 데이터 구조의 설계 색인 일람입니다.")
     st.divider()
     
-    st.subheader("📍 기능 아키텍처 노드 구조")
-    
-    # 📌 마크다운 파서가 코드 블록으로 인식하지 못하도록 모든 들여쓰기(Indentation) 제거 완료
-    architecture_html = """
-<div style="background-color: #1e3a8a; padding: 25px; border-radius: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); font-family: sans-serif; margin-bottom: 30px;">
-    <h3 style="color: #ffffff; text-align: center; margin-top: 0; margin-bottom: 25px; font-weight: 700;">용인시 건축 조례 전문 해석 AI 플랫폼 사이트맵</h3>
-    
-    <div style="background-color: #ffffff; border-radius: 10px; padding: 18px; margin-bottom: 15px;">
-        <div style="text-align: center; font-weight: 700; color: #1e3a8a; font-size: 16px; margin-bottom: 15px;">대국민 / 실무자 서비스 (UI)</div>
-        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-            <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
-                <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">🤖 AI 건축 규제 검토</div>
-                <div style="font-size: 11px; color: #555; margin-top: 4px;">법령 시맨틱 분석 질의응답</div>
-            </div>
-            <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
-                <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">📝 민원 서식 빌더</div>
-                <div style="font-size: 11px; color: #555; margin-top: 4px;">행정 서류 자동 완성</div>
-            </div>
-            <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
-                <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">💡 실무 Q&A 게시판</div>
-                <div style="font-size: 11px; color: #555; margin-top: 4px;">자주 묻는 질문 및 커뮤니티</div>
-            </div>
-            <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
-                <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">⚙️ 컨텍스트 관리소</div>
-                <div style="font-size: 11px; color: #555; margin-top: 4px;">대지 상태 및 파라미터 제어</div>
+    # 📌 마크다운 파서가 코드 블록으로 인식하지 못하도록 모든 들여쓰기(Indentation) 제거 완료 (해결됨)
+    architecture_html = textwrap.dedent("""
+    <div style="background-color: #1e3a8a; padding: 25px; border-radius: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); font-family: sans-serif; margin-bottom: 30px;">
+        <h3 style="color: #ffffff; text-align: center; margin-top: 0; margin-bottom: 25px; font-weight: 700;">용인시 건축 조례 전문 해석 AI 플랫폼 사이트맵</h3>
+        
+        <div style="background-color: #ffffff; border-radius: 10px; padding: 18px; margin-bottom: 15px;">
+            <div style="text-align: center; font-weight: 700; color: #1e3a8a; font-size: 16px; margin-bottom: 15px;">대국민 / 실무자 서비스 (UI)</div>
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
+                    <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">🤖 AI 건축 규제 검토</div>
+                    <div style="font-size: 11px; color: #555; margin-top: 4px;">법령 시맨틱 분석 질의응답</div>
+                </div>
+                <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
+                    <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">📝 민원 서식 빌더</div>
+                    <div style="font-size: 11px; color: #555; margin-top: 4px;">행정 서류 자동 완성</div>
+                </div>
+                <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
+                    <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">💡 실무 Q&A 게시판</div>
+                    <div style="font-size: 11px; color: #555; margin-top: 4px;">자주 묻는 질문 및 커뮤니티</div>
+                </div>
+                <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
+                    <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">⚙️ 컨텍스트 관리소</div>
+                    <div style="font-size: 11px; color: #555; margin-top: 4px;">대지 상태 및 파라미터 제어</div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div style="background-color: #ffffff; border-radius: 10px; padding: 18px; margin-bottom: 15px;">
-        <div style="text-align: center; font-weight: 700; color: #1e3a8a; font-size: 16px; margin-bottom: 15px;">AI 및 백엔드 통합 엔진 (System Logic)</div>
-        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                <div style="font-weight: 700; color: #334155; font-size: 14px;">LLM 분석 엔진</div>
-                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">(handle_ai_analysis 모듈)</div>
-            </div>
-            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                <div style="font-weight: 700; color: #334155; font-size: 14px;">법률 레이어링 구조화</div>
-                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">(규제 조항 필터링 및 매핑)</div>
-            </div>
-            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                <div style="font-weight: 700; color: #334155; font-size: 14px;">인증 및 세션 관리자</div>
-                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">(대화 이력 보존 및 상태 동기화)</div>
+        <div style="background-color: #ffffff; border-radius: 10px; padding: 18px; margin-bottom: 15px;">
+            <div style="text-align: center; font-weight: 700; color: #1e3a8a; font-size: 16px; margin-bottom: 15px;">AI 및 백엔드 통합 엔진 (System Logic)</div>
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
+                    <div style="font-weight: 700; color: #334155; font-size: 14px;">LLM 분석 엔진</div>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">(handle_ai_analysis 모듈)</div>
+                </div>
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
+                    <div style="font-weight: 700; color: #334155; font-size: 14px;">법률 레이어링 구조화</div>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">(규제 조항 필터링 및 매핑)</div>
+                </div>
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
+                    <div style="font-weight: 700; color: #334155; font-size: 14px;">인증 및 세션 관리자</div>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">(대화 이력 보존 및 상태 동기화)</div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div style="background-color: #ffffff; border-radius: 10px; padding: 18px;">
-        <div style="text-align: center; font-weight: 700; color: #1e3a8a; font-size: 16px; margin-bottom: 15px;">데이터베이스 및 외부 연계 체계 (DB)</div>
-        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                <div style="font-weight: 700; color: #166534; font-size: 13px;">지역 자치법규 DB</div>
-                <div style="font-size: 11px; color: #555; margin-top: 4px;">용인시/경기도 지역 조례 7개</div>
-            </div>
-            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                <div style="font-weight: 700; color: #166534; font-size: 13px;">상위 차용 법령 DB</div>
-                <div style="font-size: 11px; color: #555; margin-top: 4px;">국가 법령 등 118개 인덱스</div>
-            </div>
-            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                <div style="font-weight: 700; color: #166534; font-size: 13px;">내부 시스템 로컬 DB</div>
-                <div style="font-size: 11px; color: #555; margin-top: 4px;">사용자 데이터 및 문서 스키마</div>
+        <div style="background-color: #ffffff; border-radius: 10px; padding: 18px;">
+            <div style="text-align: center; font-weight: 700; color: #1e3a8a; font-size: 16px; margin-bottom: 15px;">데이터베이스 및 외부 연계 체계 (DB)</div>
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
+                    <div style="font-weight: 700; color: #166534; font-size: 13px;">지역 자치법규 DB</div>
+                    <div style="font-size: 11px; color: #555; margin-top: 4px;">용인시/경기도 지역 조례 7개</div>
+                </div>
+                <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
+                    <div style="font-weight: 700; color: #166534; font-size: 13px;">상위 차용 법령 DB</div>
+                    <div style="font-size: 11px; color: #555; margin-top: 4px;">국가 법령 등 118개 인덱스</div>
+                </div>
+                <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
+                    <div style="font-weight: 700; color: #166534; font-size: 13px;">내부 시스템 로컬 DB</div>
+                    <div style="font-size: 11px; color: #555; margin-top: 4px;">사용자 데이터 및 문서 스키마</div>
+                </div>
             </div>
         </div>
     </div>
-</div>
-"""
+    """).strip()
     st.markdown(architecture_html, unsafe_allow_html=True)
 
     st.divider()
     
-    # 조례, 법령, 조례의 차용법규(44개), 법령의 차용법규(61개) 전수 매핑 탭 구조
+    # 조례, 법령, 조례의 차용법규(44개), 법령의 차용법규(61개) 전수 매핑 탭 구조 (안내 문구 제거)
     tabs = st.tabs(["🏛️ 1. 기본 조례 일람", "📜 2. 상위 기본 법령 일람", "🔗 3. 조례의 차용 법규 (전체 44개)", "🔗 4. 법령의 차용 법규 (전체 61개)"])
     
     # 탭 1: 조례 리스트
