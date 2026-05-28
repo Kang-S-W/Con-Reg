@@ -130,12 +130,19 @@ def handle_ai_analysis(user_query):
         except Exception:
             pass
 
-    # 4. 상태 프롬프트 주입 준비
-    current_state = current_chat["state"]
+        # 4. 상태 프롬프트 주입 준비 (app.py의 토글 key와 연동)
+    use_state = st.session_state.get("use_state_panel", True)
+    
+    if use_state:
+        current_state = current_chat["state"]
+    else:
+        current_state = {} 
+
     if current_state:
         state_context = f"[현재까지 확정된 민원인 건축 정보 상태]: {json.dumps(current_state, ensure_ascii=False)}\n위 정보를 기본 전제로 하여 법규를 해석할 것."
     else:
         state_context = ""
+
 
     # 5. DB 탐색 및 인공지능 응답 호출
     from engine import get_semantic_keywords, get_gemini_response
