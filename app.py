@@ -532,70 +532,70 @@ elif st.session_state.current_page == "sitemap":
     st.caption("플랫폼 엔진이 검사하는 데이터 구조의 설계 및 통합 업데이트된 취급 자치 조례와 상위 차용법령 전체 색인 일람입니다.")
     st.divider()
     
-    # 📌 사용자가 요청한 레퍼런스 스타일 기반 HTML/CSS 시각화 다이어그램 적용 (현재 기능 스키마에 맞춰 완벽 조율)
+    # 📌 마크다운 파서가 코드 블록으로 인식하지 못하도록 모든 들여쓰기(Indentation) 제거 완료
     architecture_html = """
-    <div style="background-color: #1e3a8a; padding: 25px; border-radius: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); font-family: sans-serif; margin-bottom: 30px;">
-        <h3 style="color: #ffffff; text-align: center; margin-top: 0; margin-bottom: 25px; font-weight: 700;">용인시 건축 조례 전문 해석 AI 플랫폼 사이트맵</h3>
-        
-        <div style="background-color: #ffffff; border-radius: 10px; padding: 18px; margin-bottom: 15px;">
-            <div style="text-align: center; font-weight: 700; color: #1e3a8a; font-size: 16px; margin-bottom: 15px;">대국민 / 실무자 서비스 (UI)</div>
-            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
-                    <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">🤖 AI 건축 규제 검토</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">법령 시맨틱 분석 질의응답</div>
-                </div>
-                <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
-                    <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">📝 민원 서식 빌더</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">행정 서류 자동 완성</div>
-                </div>
-                <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
-                    <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">💡 실무 Q&A 게시판</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">자주 묻는 질문 및 커뮤니티</div>
-                </div>
-                <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
-                    <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">⚙️ 컨텍스트 관리소</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">대지 상태 및 파라미터 제어</div>
-                </div>
+<div style="background-color: #1e3a8a; padding: 25px; border-radius: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); font-family: sans-serif; margin-bottom: 30px;">
+    <h3 style="color: #ffffff; text-align: center; margin-top: 0; margin-bottom: 25px; font-weight: 700;">용인시 건축 조례 전문 해석 AI 플랫폼 사이트맵</h3>
+    
+    <div style="background-color: #ffffff; border-radius: 10px; padding: 18px; margin-bottom: 15px;">
+        <div style="text-align: center; font-weight: 700; color: #1e3a8a; font-size: 16px; margin-bottom: 15px;">대국민 / 실무자 서비스 (UI)</div>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
+                <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">🤖 AI 건축 규제 검토</div>
+                <div style="font-size: 11px; color: #555; margin-top: 4px;">법령 시맨틱 분석 질의응답</div>
             </div>
-        </div>
-
-        <div style="background-color: #ffffff; border-radius: 10px; padding: 18px; margin-bottom: 15px;">
-            <div style="text-align: center; font-weight: 700; color: #1e3a8a; font-size: 16px; margin-bottom: 15px;">AI 및 백엔드 통합 엔진 (System Logic)</div>
-            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                    <div style="font-weight: 700; color: #334155; font-size: 14px;">LLM 분석 엔진</div>
-                    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">(handle_ai_analysis 모듈)</div>
-                </div>
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                    <div style="font-weight: 700; color: #334155; font-size: 14px;">법률 레이어링 구조화</div>
-                    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">(규제 조항 필터링 및 매핑)</div>
-                </div>
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                    <div style="font-weight: 700; color: #334155; font-size: 14px;">인증 및 세션 관리자</div>
-                    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">(대화 이력 보존 및 상태 동기화)</div>
-                </div>
+            <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
+                <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">📝 민원 서식 빌더</div>
+                <div style="font-size: 11px; color: #555; margin-top: 4px;">행정 서류 자동 완성</div>
             </div>
-        </div>
-
-        <div style="background-color: #ffffff; border-radius: 10px; padding: 18px;">
-            <div style="text-align: center; font-weight: 700; color: #1e3a8a; font-size: 16px; margin-bottom: 15px;">데이터베이스 및 외부 연계 체계 (DB)</div>
-            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                    <div style="font-weight: 700; color: #166534; font-size: 13px;">지역 자치법규 DB</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">용인시/경기도 지역 조례 7개</div>
-                </div>
-                <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                    <div style="font-weight: 700; color: #166534; font-size: 13px;">상위 차용 법령 DB</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">국가 법령 등 118개 인덱스</div>
-                </div>
-                <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                    <div style="font-weight: 700; color: #166534; font-size: 13px;">내부 시스템 로컬 DB</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">사용자 데이터 및 문서 스키마</div>
-                </div>
+            <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
+                <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">💡 실무 Q&A 게시판</div>
+                <div style="font-size: 11px; color: #555; margin-top: 4px;">자주 묻는 질문 및 커뮤니티</div>
+            </div>
+            <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
+                <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">⚙️ 컨텍스트 관리소</div>
+                <div style="font-size: 11px; color: #555; margin-top: 4px;">대지 상태 및 파라미터 제어</div>
             </div>
         </div>
     </div>
-    """
+
+    <div style="background-color: #ffffff; border-radius: 10px; padding: 18px; margin-bottom: 15px;">
+        <div style="text-align: center; font-weight: 700; color: #1e3a8a; font-size: 16px; margin-bottom: 15px;">AI 및 백엔드 통합 엔진 (System Logic)</div>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
+                <div style="font-weight: 700; color: #334155; font-size: 14px;">LLM 분석 엔진</div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">(handle_ai_analysis 모듈)</div>
+            </div>
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
+                <div style="font-weight: 700; color: #334155; font-size: 14px;">법률 레이어링 구조화</div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">(규제 조항 필터링 및 매핑)</div>
+            </div>
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
+                <div style="font-weight: 700; color: #334155; font-size: 14px;">인증 및 세션 관리자</div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">(대화 이력 보존 및 상태 동기화)</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="background-color: #ffffff; border-radius: 10px; padding: 18px;">
+        <div style="text-align: center; font-weight: 700; color: #1e3a8a; font-size: 16px; margin-bottom: 15px;">데이터베이스 및 외부 연계 체계 (DB)</div>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
+                <div style="font-weight: 700; color: #166534; font-size: 13px;">지역 자치법규 DB</div>
+                <div style="font-size: 11px; color: #555; margin-top: 4px;">용인시/경기도 지역 조례 7개</div>
+            </div>
+            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
+                <div style="font-weight: 700; color: #166534; font-size: 13px;">상위 차용 법령 DB</div>
+                <div style="font-size: 11px; color: #555; margin-top: 4px;">국가 법령 등 118개 인덱스</div>
+            </div>
+            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
+                <div style="font-weight: 700; color: #166534; font-size: 13px;">내부 시스템 로컬 DB</div>
+                <div style="font-size: 11px; color: #555; margin-top: 4px;">사용자 데이터 및 문서 스키마</div>
+            </div>
+        </div>
+    </div>
+</div>
+"""
     st.markdown(architecture_html, unsafe_allow_html=True)
 
     st.subheader("📚 전수 통합 업데이트 완료된 법규 전체 색인")
