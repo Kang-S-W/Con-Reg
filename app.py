@@ -1,3 +1,4 @@
+import streamlit.components.v1 as components
 import streamlit as st
 import time
 from datetime import datetime
@@ -528,77 +529,269 @@ elif st.session_state.current_page == "qna":
                             st.session_state.qna_list[i]['status'] = "답변완료"
                             st.rerun()
 
-# --- 🗺️ [화면 4] 사이트맵 (시각적 아키텍처 다이어그램 및 데이터 테이블) ---
+# --- 🗺️ [화면 4] 사이트맵 ---
 elif st.session_state.current_page == "sitemap":
+
     st.markdown("## 🗺️ 플랫폼 구조 및 법률 아카이브 트리")
     st.caption("플랫폼 엔진이 검사하는 데이터 구조의 설계 색인 일람입니다.")
     st.divider()
-    
-    # 📌 마크다운 파서가 코드 블록으로 인식하지 못하도록 모든 들여쓰기(Indentation) 제거 완료 (해결됨)
-    architecture_html = textwrap.dedent("""
-    <div style="background-color: #1e3a8a; padding: 25px; border-radius: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); font-family: sans-serif; margin-bottom: 30px;">
-        <h3 style="color: #ffffff; text-align: center; margin-top: 0; margin-bottom: 25px; font-weight: 700;">용인시 건축 조례 전문 해석 AI 플랫폼 사이트맵</h3>
-        
-        <div style="background-color: #ffffff; border-radius: 10px; padding: 18px; margin-bottom: 15px;">
-            <div style="text-align: center; font-weight: 700; color: #1e3a8a; font-size: 16px; margin-bottom: 15px;">대국민 / 실무자 서비스 (UI)</div>
-            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
-                    <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">🤖 AI 건축 규제 검토</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">법령 시맨틱 분석 질의응답</div>
-                </div>
-                <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
-                    <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">📝 민원 서식 빌더</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">행정 서류 자동 완성</div>
-                </div>
-                <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
-                    <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">💡 실무 Q&A 게시판</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">자주 묻는 질문 및 커뮤니티</div>
-                </div>
-                <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 8px; padding: 12px; flex: 1; min-width: 160px; text-align: center;">
-                    <div style="font-weight: 700; color: #0d47a1; font-size: 14px;">⚙️ 컨텍스트 관리소</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">대지 상태 및 파라미터 제어</div>
-                </div>
-            </div>
-        </div>
 
-        <div style="background-color: #ffffff; border-radius: 10px; padding: 18px; margin-bottom: 15px;">
-            <div style="text-align: center; font-weight: 700; color: #1e3a8a; font-size: 16px; margin-bottom: 15px;">AI 및 백엔드 통합 엔진 (System Logic)</div>
-            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                    <div style="font-weight: 700; color: #334155; font-size: 14px;">LLM 분석 엔진</div>
-                    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">(handle_ai_analysis 모듈)</div>
-                </div>
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                    <div style="font-weight: 700; color: #334155; font-size: 14px;">법률 레이어링 구조화</div>
-                    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">(규제 조항 필터링 및 매핑)</div>
-                </div>
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                    <div style="font-weight: 700; color: #334155; font-size: 14px;">인증 및 세션 관리자</div>
-                    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">(대화 이력 보존 및 상태 동기화)</div>
-                </div>
-            </div>
-        </div>
+    architecture_html = """
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
 
-        <div style="background-color: #ffffff; border-radius: 10px; padding: 18px;">
-            <div style="text-align: center; font-weight: 700; color: #1e3a8a; font-size: 16px; margin-bottom: 15px;">데이터베이스 및 외부 연계 체계 (DB)</div>
-            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                    <div style="font-weight: 700; color: #166534; font-size: 13px;">지역 자치법규 DB</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">용인시/경기도 지역 조례 7개</div>
-                </div>
-                <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                    <div style="font-weight: 700; color: #166534; font-size: 13px;">상위 차용 법령 DB</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">국가 법령 등 118개 인덱스</div>
-                </div>
-                <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; flex: 1; min-width: 200px; text-align: center;">
-                    <div style="font-weight: 700; color: #166534; font-size: 13px;">내부 시스템 로컬 DB</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">사용자 데이터 및 문서 스키마</div>
-                </div>
-            </div>
-        </div>
+body{
+    margin:0;
+    padding:20px;
+    background:#f8fafc;
+    font-family: Pretendard, sans-serif;
+}
+
+.wrapper{
+    background-color:#1e3a8a;
+    padding:25px;
+    border-radius:14px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.15);
+}
+
+.title{
+    color:white;
+    text-align:center;
+    font-size:28px;
+    font-weight:700;
+    margin-bottom:25px;
+}
+
+.section{
+    background:white;
+    border-radius:10px;
+    padding:18px;
+    margin-bottom:18px;
+}
+
+.section-title{
+    text-align:center;
+    font-weight:700;
+    color:#1e3a8a;
+    font-size:18px;
+    margin-bottom:15px;
+}
+
+.flex{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+}
+
+.card-blue{
+    background:#f0f7ff;
+    border:1px solid #cce3ff;
+    border-radius:8px;
+    padding:12px;
+    flex:1;
+    min-width:180px;
+    text-align:center;
+}
+
+.card-gray{
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    border-radius:8px;
+    padding:12px;
+    flex:1;
+    min-width:220px;
+    text-align:center;
+}
+
+.card-green{
+    background:#f0fdf4;
+    border:1px solid #bbf7d0;
+    border-radius:8px;
+    padding:12px;
+    flex:1;
+    min-width:220px;
+    text-align:center;
+}
+
+.card-title-blue{
+    font-weight:700;
+    color:#0d47a1;
+    font-size:15px;
+}
+
+.card-title-gray{
+    font-weight:700;
+    color:#334155;
+    font-size:15px;
+}
+
+.card-title-green{
+    font-weight:700;
+    color:#166534;
+    font-size:15px;
+}
+
+.card-desc{
+    font-size:12px;
+    color:#555;
+    margin-top:5px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+    <div class="title">
+        용인시 건축 조례 전문 해석 AI 플랫폼 사이트맵
     </div>
-    """).strip()
-    st.markdown(architecture_html, unsafe_allow_html=True)
+
+    <!-- UI -->
+    <div class="section">
+
+        <div class="section-title">
+            대국민 / 실무자 서비스 (UI)
+        </div>
+
+        <div class="flex">
+
+            <div class="card-blue">
+                <div class="card-title-blue">
+                    🤖 AI 건축 규제 검토
+                </div>
+                <div class="card-desc">
+                    법령 시맨틱 분석 질의응답
+                </div>
+            </div>
+
+            <div class="card-blue">
+                <div class="card-title-blue">
+                    📝 민원 서식 빌더
+                </div>
+                <div class="card-desc">
+                    행정 서류 자동 완성
+                </div>
+            </div>
+
+            <div class="card-blue">
+                <div class="card-title-blue">
+                    💡 실무 Q&A 게시판
+                </div>
+                <div class="card-desc">
+                    자주 묻는 질문 및 커뮤니티
+                </div>
+            </div>
+
+            <div class="card-blue">
+                <div class="card-title-blue">
+                    ⚙️ 컨텍스트 관리소
+                </div>
+                <div class="card-desc">
+                    대지 상태 및 파라미터 제어
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- SYSTEM -->
+    <div class="section">
+
+        <div class="section-title">
+            AI 및 백엔드 통합 엔진
+        </div>
+
+        <div class="flex">
+
+            <div class="card-gray">
+                <div class="card-title-gray">
+                    LLM 분석 엔진
+                </div>
+                <div class="card-desc">
+                    handle_ai_analysis 모듈
+                </div>
+            </div>
+
+            <div class="card-gray">
+                <div class="card-title-gray">
+                    법률 레이어링 구조화
+                </div>
+                <div class="card-desc">
+                    규제 조항 필터링 및 매핑
+                </div>
+            </div>
+
+            <div class="card-gray">
+                <div class="card-title-gray">
+                    인증 및 세션 관리자
+                </div>
+                <div class="card-desc">
+                    대화 이력 보존 및 상태 동기화
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- DB -->
+    <div class="section">
+
+        <div class="section-title">
+            데이터베이스 및 외부 연계 체계
+        </div>
+
+        <div class="flex">
+
+            <div class="card-green">
+                <div class="card-title-green">
+                    지역 자치법규 DB
+                </div>
+                <div class="card-desc">
+                    용인시/경기도 지역 조례
+                </div>
+            </div>
+
+            <div class="card-green">
+                <div class="card-title-green">
+                    상위 차용 법령 DB
+                </div>
+                <div class="card-desc">
+                    국가 법령 인덱스
+                </div>
+            </div>
+
+            <div class="card-green">
+                <div class="card-title-green">
+                    내부 시스템 로컬 DB
+                </div>
+                <div class="card-desc">
+                    사용자 데이터 및 문서 스키마
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
+"""
+
+    # ✅ markdown 대신 html component 사용
+    components.html(
+        architecture_html,
+        height=900,
+        scrolling=True
+    )
 
     st.divider()
     
