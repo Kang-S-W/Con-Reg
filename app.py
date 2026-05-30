@@ -248,15 +248,15 @@ def apply_premium_ui_v3(is_dark):
     }}
 
     [data-testid="stSidebar"] > div:first-child {{
-        padding-top: 0.65rem !important;
+        padding-top: 0 !important;
     }}
 
     [data-testid="stSidebarUserContent"] {{
-        padding-top: 0.65rem !important;
+        padding-top: 0 !important;
     }}
 
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {{
-        gap: 0.55rem !important;
+        gap: 0.45rem !important;
     }}
 
     .sidebar-brand {{
@@ -265,7 +265,7 @@ def apply_premium_ui_v3(is_dark):
     }}
 
     .sidebar-brand-title {{
-        margin-top: 6px;
+        margin-top: -2px;
         color: var(--accent-strong);
         font-size: 20px;
         font-weight: 850;
@@ -283,7 +283,7 @@ def apply_premium_ui_v3(is_dark):
         max-height: 82px;
         object-fit: contain;
         image-rendering: auto;
-        transform: translateX(22px);
+        transform: translate(42px, -8px);
     }}
 
     [data-testid="stSidebar"] h2,
@@ -401,6 +401,8 @@ def apply_premium_ui_v3(is_dark):
 
     div[data-testid="stToggle"] label,
     div[data-testid="stCheckbox"] label,
+    div[data-testid="stToggle"] label div,
+    div[data-testid="stCheckbox"] label div,
     div[data-testid="stToggle"] [data-testid="stWidgetLabel"],
     div[data-testid="stCheckbox"] [data-testid="stWidgetLabel"],
     div[data-testid="stToggle"] [data-testid="stMarkdownContainer"],
@@ -417,6 +419,10 @@ def apply_premium_ui_v3(is_dark):
         -webkit-text-fill-color: var(--text) !important;
         background: transparent !important;
         background-color: transparent !important;
+        border: 0 !important;
+        outline: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
         text-shadow: none !important;
         opacity: 1 !important;
         font-weight: 700 !important;
@@ -426,6 +432,9 @@ def apply_premium_ui_v3(is_dark):
     div[data-testid="stCheckbox"] > label {{
         background: transparent !important;
         background-color: transparent !important;
+        border: 0 !important;
+        outline: 0 !important;
+        box-shadow: none !important;
         gap: 0.55rem !important;
     }}
 
@@ -437,6 +446,10 @@ def apply_premium_ui_v3(is_dark):
         -webkit-text-fill-color: var(--text) !important;
         background: transparent !important;
         background-color: transparent !important;
+        border: 0 !important;
+        outline: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
         opacity: 1 !important;
     }}
 
