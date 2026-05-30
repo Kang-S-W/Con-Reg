@@ -142,6 +142,9 @@ def apply_premium_ui_v3(is_dark):
             "table_header": "#282828",
             "table_text": "#f5f5f5",
             "table_muted": "#b8b8b8",
+            "toggle_track": "#f5f5f5",
+            "toggle_thumb": "#111111",
+            "toggle_border": "#f5f5f5",
         }
     else:
         colors = {
@@ -169,6 +172,9 @@ def apply_premium_ui_v3(is_dark):
             "table_header": "#f2f2f2",
             "table_text": "#111111",
             "table_muted": "#555555",
+            "toggle_track": "#111111",
+            "toggle_thumb": "#ffffff",
+            "toggle_border": "#111111",
         }
 
     st.markdown(
@@ -201,6 +207,9 @@ def apply_premium_ui_v3(is_dark):
         --table-header: {colors["table_header"]};
         --table-text: {colors["table_text"]};
         --table-muted: {colors["table_muted"]};
+        --toggle-track: {colors["toggle_track"]};
+        --toggle-thumb: {colors["toggle_thumb"]};
+        --toggle-border: {colors["toggle_border"]};
     }}
 
     html, body, .stApp, p, h1, h2, h3, h4, h5, h6, label, input, textarea, div {{
@@ -238,13 +247,25 @@ def apply_premium_ui_v3(is_dark):
         border-right: 1.25px solid var(--line) !important;
     }}
 
+    [data-testid="stSidebar"] > div:first-child {{
+        padding-top: 0.65rem !important;
+    }}
+
+    [data-testid="stSidebarUserContent"] {{
+        padding-top: 0.65rem !important;
+    }}
+
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {{
+        gap: 0.55rem !important;
+    }}
+
     .sidebar-brand {{
         text-align: center;
-        padding: 8px 4px 12px;
+        padding: 0 4px 8px;
     }}
 
     .sidebar-brand-title {{
-        margin-top: 10px;
+        margin-top: 6px;
         color: var(--accent-strong);
         font-size: 20px;
         font-weight: 850;
@@ -259,7 +280,7 @@ def apply_premium_ui_v3(is_dark):
     [data-testid="stSidebar"] [data-testid="stImage"] img {{
         display: block;
         margin: 0 auto;
-        max-height: 74px;
+        max-height: 82px;
         object-fit: contain;
         image-rendering: auto;
     }}
@@ -279,9 +300,14 @@ def apply_premium_ui_v3(is_dark):
 
     .stButton > button,
     .stDownloadButton > button,
-    button[data-testid="baseButton-secondary"] {{
-        background: var(--surface) !important;
-        color: var(--text) !important;
+    button[data-testid="baseButton-secondary"],
+    button[data-testid="baseButton-primary"],
+    button[kind="primary"],
+    button[kind="secondary"],
+    button[kind="tertiary"] {{
+        background: var(--button-bg) !important;
+        color: var(--button-text) !important;
+        -webkit-text-fill-color: var(--button-text) !important;
         border: 1.25px solid var(--line) !important;
         border-radius: 10px !important;
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06) !important;
@@ -299,6 +325,19 @@ def apply_premium_ui_v3(is_dark):
         font-weight: 750 !important;
     }}
 
+    .stButton > button:disabled,
+    .stDownloadButton > button:disabled,
+    div[data-testid="stFormSubmitButton"] button:disabled,
+    button:disabled,
+    button[disabled] {{
+        background: var(--button-bg) !important;
+        color: var(--button-text) !important;
+        -webkit-text-fill-color: var(--button-text) !important;
+        border-color: var(--line) !important;
+        opacity: 1 !important;
+        cursor: not-allowed !important;
+    }}
+
     div[data-testid="stFormSubmitButton"] button:hover,
     button[kind="secondaryFormSubmit"]:hover,
     button[kind="primaryFormSubmit"]:hover {{
@@ -310,25 +349,16 @@ def apply_premium_ui_v3(is_dark):
 
     .stButton > button:hover,
     .stDownloadButton > button:hover {{
-        background: var(--surface-2) !important;
+        background: var(--button-hover-bg) !important;
         border-color: var(--accent) !important;
-        color: var(--accent-strong) !important;
+        color: var(--button-text) !important;
+        -webkit-text-fill-color: var(--button-text) !important;
         transform: translateY(-1px);
     }}
 
     button[kind="primary"],
     button[data-testid="baseButton-primary"] {{
-        background: var(--accent) !important;
-        border-color: var(--accent) !important;
-        color: #ffffff !important;
-        font-weight: 700 !important;
-    }}
-
-    button[kind="primary"]:hover,
-    button[data-testid="baseButton-primary"]:hover {{
-        background: var(--accent-strong) !important;
-        border-color: var(--accent-strong) !important;
-        color: #ffffff !important;
+        font-weight: 750 !important;
     }}
 
     div[data-baseweb="input"] > div,
@@ -366,6 +396,40 @@ def apply_premium_ui_v3(is_dark):
     [data-testid="stChatInput"] textarea::placeholder {{
         color: var(--muted) !important;
         opacity: 0.85 !important;
+    }}
+
+    div[data-testid="stToggle"] label,
+    div[data-testid="stCheckbox"] label {{
+        color: var(--text) !important;
+        font-weight: 700 !important;
+    }}
+
+    div[data-testid="stToggle"] [data-testid="stCheckboxIndicator"],
+    div[data-testid="stCheckbox"] [data-testid="stCheckboxIndicator"] {{
+        background: var(--toggle-track) !important;
+        border: 2px solid var(--toggle-border) !important;
+        box-shadow: 0 0 0 2px var(--surface), 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+        opacity: 1 !important;
+    }}
+
+    div[data-testid="stToggle"] [data-testid="stCheckboxIndicator"]::before,
+    div[data-testid="stCheckbox"] [data-testid="stCheckboxIndicator"]::before {{
+        background: var(--toggle-thumb) !important;
+        opacity: 1 !important;
+    }}
+
+    div[data-testid="stToggle"] input:checked + div,
+    div[data-testid="stCheckbox"] input:checked + div {{
+        background: var(--toggle-track) !important;
+        border-color: var(--toggle-border) !important;
+    }}
+
+    [data-testid="stSidebar"] input[type="checkbox"] + div,
+    [data-testid="stSidebar"] input[role="switch"] + div {{
+        background: var(--toggle-track) !important;
+        border: 2px solid var(--toggle-border) !important;
+        box-shadow: 0 0 0 2px var(--surface), 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+        opacity: 1 !important;
     }}
 
     div[data-testid="stExpander"] details {{
