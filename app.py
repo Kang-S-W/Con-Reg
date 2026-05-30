@@ -283,6 +283,7 @@ def apply_premium_ui_v3(is_dark):
         max-height: 82px;
         object-fit: contain;
         image-rendering: auto;
+        transform: translateX(22px);
     }}
 
     [data-testid="stSidebar"] h2,
@@ -399,9 +400,44 @@ def apply_premium_ui_v3(is_dark):
     }}
 
     div[data-testid="stToggle"] label,
-    div[data-testid="stCheckbox"] label {{
+    div[data-testid="stCheckbox"] label,
+    div[data-testid="stToggle"] [data-testid="stWidgetLabel"],
+    div[data-testid="stCheckbox"] [data-testid="stWidgetLabel"],
+    div[data-testid="stToggle"] [data-testid="stMarkdownContainer"],
+    div[data-testid="stCheckbox"] [data-testid="stMarkdownContainer"],
+    div[data-testid="stToggle"] label p,
+    div[data-testid="stCheckbox"] label p,
+    div[data-testid="stToggle"] label span,
+    div[data-testid="stCheckbox"] label span,
+    div[data-testid="stToggle"] [data-testid="stWidgetLabel"] *,
+    div[data-testid="stCheckbox"] [data-testid="stWidgetLabel"] *,
+    div[data-testid="stToggle"] [data-testid="stMarkdownContainer"] *,
+    div[data-testid="stCheckbox"] [data-testid="stMarkdownContainer"] * {{
         color: var(--text) !important;
+        -webkit-text-fill-color: var(--text) !important;
+        background: transparent !important;
+        background-color: transparent !important;
+        text-shadow: none !important;
+        opacity: 1 !important;
         font-weight: 700 !important;
+    }}
+
+    div[data-testid="stToggle"] > label,
+    div[data-testid="stCheckbox"] > label {{
+        background: transparent !important;
+        background-color: transparent !important;
+        gap: 0.55rem !important;
+    }}
+
+    div[data-testid="stToggle"] > label > div:last-child,
+    div[data-testid="stCheckbox"] > label > div:last-child,
+    div[data-testid="stToggle"] > label > div:last-child *,
+    div[data-testid="stCheckbox"] > label > div:last-child * {{
+        color: var(--text) !important;
+        -webkit-text-fill-color: var(--text) !important;
+        background: transparent !important;
+        background-color: transparent !important;
+        opacity: 1 !important;
     }}
 
     div[data-testid="stToggle"] [data-testid="stCheckboxIndicator"],
