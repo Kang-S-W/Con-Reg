@@ -62,6 +62,8 @@ apply_custom_style(st.session_state.dark_mode)
 def find_yongin_logo():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     logo_candidates = [
+        "yongin_logo.png",
+        "Con-Reg/yongin_logo.png",
         "assets/yongin_logo.png",
         "assets/yongin_logo.jpg",
         "assets/yongin_logo.jpeg",
@@ -71,7 +73,6 @@ def find_yongin_logo():
         "assets/logo.png",
         "assets/logo.jpg",
         "assets/logo.svg",
-        "yongin_logo.png",
         "yongin_logo.jpg",
         "yongin_logo.svg",
         "yongin-city-logo.png",
@@ -87,6 +88,13 @@ def find_yongin_logo():
         logo_path = os.path.join(base_dir, candidate)
         if os.path.exists(logo_path):
             return logo_path
+
+    base_depth = base_dir.rstrip(os.sep).count(os.sep)
+    for root, dirs, files in os.walk(base_dir):
+        if root.rstrip(os.sep).count(os.sep) - base_depth >= 3:
+            dirs[:] = []
+        if "yongin_logo.png" in files:
+            return os.path.join(root, "yongin_logo.png")
     return None
 
 
@@ -110,43 +118,57 @@ def ensure_chat_ids():
 def apply_premium_ui_v3(is_dark):
     if is_dark:
         colors = {
-            "app_bg": "#171717",
-            "sidebar_bg": "#111111",
-            "surface": "#222222",
-            "surface_2": "#2b2b2b",
+            "app_bg": "#121212",
+            "sidebar_bg": "#151515",
+            "surface": "#1f1f1f",
+            "surface_2": "#282828",
             "surface_3": "#333333",
             "text": "#f5f5f5",
-            "muted": "#b7bbc3",
-            "line": "#525866",
-            "accent": "#5b9df1",
-            "accent_strong": "#8ab8ff",
-            "accent_soft": "rgba(91, 157, 241, 0.16)",
-            "success_bg": "rgba(22, 163, 74, 0.14)",
-            "success_line": "#22c55e",
-            "warning_bg": "rgba(217, 119, 6, 0.14)",
-            "warning_line": "#f59e0b",
-            "error_bg": "rgba(220, 38, 38, 0.16)",
-            "error_line": "#ef4444",
+            "muted": "#b8b8b8",
+            "line": "#4b4b4b",
+            "accent": "#e7e7e7",
+            "accent_strong": "#ffffff",
+            "accent_soft": "rgba(255, 255, 255, 0.08)",
+            "success_bg": "rgba(255, 255, 255, 0.06)",
+            "success_line": "#bdbdbd",
+            "warning_bg": "rgba(255, 255, 255, 0.06)",
+            "warning_line": "#bdbdbd",
+            "error_bg": "rgba(255, 255, 255, 0.06)",
+            "error_line": "#bdbdbd",
+            "button_bg": "#f7f7f7",
+            "button_text": "#111111",
+            "button_hover_bg": "#ffffff",
+            "table_bg": "#1f1f1f",
+            "table_header": "#282828",
+            "table_text": "#f5f5f5",
+            "table_muted": "#b8b8b8",
         }
     else:
         colors = {
-            "app_bg": "#f6f8fb",
-            "sidebar_bg": "#eef2f7",
+            "app_bg": "#f5f5f5",
+            "sidebar_bg": "#f1f1f1",
             "surface": "#ffffff",
-            "surface_2": "#f8fafc",
-            "surface_3": "#edf2f7",
-            "text": "#111827",
-            "muted": "#5f6b7a",
-            "line": "#c2cad8",
-            "accent": "#2563eb",
-            "accent_strong": "#1d4ed8",
-            "accent_soft": "#eff6ff",
-            "success_bg": "#ecfdf3",
-            "success_line": "#16a34a",
-            "warning_bg": "#fffbeb",
-            "warning_line": "#d97706",
-            "error_bg": "#fef2f2",
-            "error_line": "#dc2626",
+            "surface_2": "#fafafa",
+            "surface_3": "#eeeeee",
+            "text": "#111111",
+            "muted": "#5b5b5b",
+            "line": "#b8b8b8",
+            "accent": "#1f1f1f",
+            "accent_strong": "#000000",
+            "accent_soft": "#eeeeee",
+            "success_bg": "#f7f7f7",
+            "success_line": "#9a9a9a",
+            "warning_bg": "#f7f7f7",
+            "warning_line": "#9a9a9a",
+            "error_bg": "#f7f7f7",
+            "error_line": "#9a9a9a",
+            "button_bg": "#ffffff",
+            "button_text": "#111111",
+            "button_hover_bg": "#f4f4f4",
+            "table_bg": "#ffffff",
+            "table_header": "#f2f2f2",
+            "table_text": "#111111",
+            "table_muted": "#555555",
         }
 
     st.markdown(
@@ -172,6 +194,13 @@ def apply_premium_ui_v3(is_dark):
         --warning-line: {colors["warning_line"]};
         --error-bg: {colors["error_bg"]};
         --error-line: {colors["error_line"]};
+        --button-bg: {colors["button_bg"]};
+        --button-text: {colors["button_text"]};
+        --button-hover-bg: {colors["button_hover_bg"]};
+        --table-bg: {colors["table_bg"]};
+        --table-header: {colors["table_header"]};
+        --table-text: {colors["table_text"]};
+        --table-muted: {colors["table_muted"]};
     }}
 
     html, body, .stApp, p, h1, h2, h3, h4, h5, h6, label, input, textarea, div {{
@@ -211,7 +240,7 @@ def apply_premium_ui_v3(is_dark):
 
     .sidebar-brand {{
         text-align: center;
-        padding: 10px 4px 12px;
+        padding: 8px 4px 12px;
     }}
 
     .sidebar-brand-title {{
@@ -220,6 +249,7 @@ def apply_premium_ui_v3(is_dark):
         font-size: 20px;
         font-weight: 850;
         line-height: 1.32;
+        text-align: center;
     }}
 
     [data-testid="stSidebar"] [data-testid="stImage"] {{
@@ -229,8 +259,9 @@ def apply_premium_ui_v3(is_dark):
     [data-testid="stSidebar"] [data-testid="stImage"] img {{
         display: block;
         margin: 0 auto;
-        max-height: 88px;
+        max-height: 74px;
         object-fit: contain;
+        image-rendering: auto;
     }}
 
     [data-testid="stSidebar"] h2,
@@ -255,6 +286,26 @@ def apply_premium_ui_v3(is_dark):
         border-radius: 10px !important;
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06) !important;
         transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease !important;
+    }}
+
+    div[data-testid="stFormSubmitButton"] button,
+    button[kind="secondaryFormSubmit"],
+    button[kind="primaryFormSubmit"] {{
+        background: var(--button-bg) !important;
+        color: var(--button-text) !important;
+        -webkit-text-fill-color: var(--button-text) !important;
+        border: 1.4px solid var(--line) !important;
+        border-radius: 10px !important;
+        font-weight: 750 !important;
+    }}
+
+    div[data-testid="stFormSubmitButton"] button:hover,
+    button[kind="secondaryFormSubmit"]:hover,
+    button[kind="primaryFormSubmit"]:hover {{
+        background: var(--button-hover-bg) !important;
+        color: var(--button-text) !important;
+        -webkit-text-fill-color: var(--button-text) !important;
+        border-color: var(--accent-strong) !important;
     }}
 
     .stButton > button:hover,
@@ -370,6 +421,49 @@ def apply_premium_ui_v3(is_dark):
         border-radius: 12px !important;
         overflow: hidden !important;
         background: var(--surface) !important;
+    }}
+
+    .legal-table-wrap {{
+        overflow-x: auto;
+        border: 1.35px solid var(--line);
+        border-radius: 12px;
+        background: var(--table-bg);
+        margin-top: 10px;
+        margin-bottom: 18px;
+    }}
+
+    .legal-table {{
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--table-bg);
+        color: var(--table-text);
+        font-size: 15px;
+    }}
+
+    .legal-table thead th {{
+        background: var(--table-header);
+        color: var(--table-text);
+        font-weight: 800;
+        text-align: left;
+        border-bottom: 1.25px solid var(--line);
+        border-right: 1px solid var(--line);
+        padding: 14px 16px;
+        white-space: nowrap;
+    }}
+
+    .legal-table tbody td {{
+        background: var(--table-bg);
+        color: var(--table-text);
+        border-top: 1px solid var(--line);
+        border-right: 1px solid var(--line);
+        padding: 13px 16px;
+        vertical-align: top;
+        line-height: 1.45;
+    }}
+
+    .legal-table th:last-child,
+    .legal-table td:last-child {{
+        border-right: none;
     }}
 
     [data-testid="stDialog"],
@@ -496,6 +590,16 @@ def to_multi_column_dataframe(items, column_count=4, column_name="법규"):
     return pd.DataFrame(rows, columns=[f"{column_name} {i + 1}" for i in range(column_count)])
 
 
+def render_legal_table(dataframe):
+    table_html = dataframe.fillna("").to_html(
+        index=False,
+        escape=True,
+        classes="legal-table",
+        border=0,
+    )
+    st.markdown(f"<div class='legal-table-wrap'>{table_html}</div>", unsafe_allow_html=True)
+
+
 # ==========================================
 # 4. 대화 기록 검색 팝업
 # ==========================================
@@ -557,14 +661,12 @@ def open_history_search_dialog():
 # ==========================================
 with st.sidebar:
     logo_path = find_yongin_logo()
-    st.markdown("<div class='sidebar-brand'>", unsafe_allow_html=True)
     if logo_path:
-        st.image(logo_path, width=112)
+        st.image(logo_path, width=172)
     st.markdown(
         "<div class='sidebar-brand-title'>용인시 건축법규 지원엔진</div>",
         unsafe_allow_html=True,
     )
-    st.markdown("</div>", unsafe_allow_html=True)
     st.divider()
 
     with st.expander("실무자 로그인", expanded=(st.session_state.user_id == "guest")):
@@ -1042,15 +1144,15 @@ elif st.session_state.current_page == "sitemap":
             @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
             :root {
-                --bg: #f6f8fb;
+                --bg: #f5f5f5;
                 --surface: #ffffff;
-                --surface-2: #f8fafc;
-                --text: #111827;
-                --muted: #64748b;
-                --line: #c2cad8;
-                --accent: #2563eb;
-                --green: #0f766e;
-                --violet: #6d28d9;
+                --surface-2: #fafafa;
+                --text: #111111;
+                --muted: #555555;
+                --line: #b8b8b8;
+                --accent: #111111;
+                --green: #333333;
+                --violet: #222222;
             }
 
             * {
@@ -1070,7 +1172,7 @@ elif st.session_state.current_page == "sitemap":
                 border: 1.25px solid var(--line);
                 border-radius: 18px;
                 padding: 26px;
-                box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+                box-shadow: 0 12px 30px rgba(17, 17, 17, 0.06);
             }
 
             .title {
@@ -1255,7 +1357,7 @@ elif st.session_state.current_page == "sitemap":
             ],
             columns=["소관", "조례명"],
         )
-        st.dataframe(df_ord, hide_index=True, use_container_width=True)
+        render_legal_table(df_ord)
 
     with tabs[1]:
         law_data = [
@@ -1273,11 +1375,7 @@ elif st.session_state.current_page == "sitemap":
             "건축물관리법 시행규칙",
             "국토의 계획 및 이용에 관한 법률 시행규칙",
         ]
-        st.dataframe(
-            to_multi_column_dataframe(law_data, column_count=3, column_name="법령"),
-            hide_index=True,
-            use_container_width=True,
-        )
+        render_legal_table(to_multi_column_dataframe(law_data, column_count=3, column_name="법령"))
 
     with tabs[2]:
         ord_borrow_data = [
@@ -1326,11 +1424,7 @@ elif st.session_state.current_page == "sitemap":
             "용인시 도시계획 조례",
             "공공발주사업에 대한 건축사의 업무범위와 대가기준",
         ]
-        st.dataframe(
-            to_multi_column_dataframe(ord_borrow_data, column_count=4, column_name="법규"),
-            hide_index=True,
-            use_container_width=True,
-        )
+        render_legal_table(to_multi_column_dataframe(ord_borrow_data, column_count=4, column_name="법규"))
 
     with tabs[3]:
         law_borrow_data = [
@@ -1396,8 +1490,4 @@ elif st.session_state.current_page == "sitemap":
             "국토의 계획 및 이용에 관한 법률 시행령",
             "수산자원관리법 시행령",
         ]
-        st.dataframe(
-            to_multi_column_dataframe(law_borrow_data, column_count=4, column_name="법규"),
-            hide_index=True,
-            use_container_width=True,
-        )
+        render_legal_table(to_multi_column_dataframe(law_borrow_data, column_count=4, column_name="법규"))
