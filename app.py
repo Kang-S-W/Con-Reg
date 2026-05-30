@@ -1,5 +1,16 @@
-import streamlit.components.v1 as components
 import streamlit as st
+
+# ==========================================
+# 1. 페이지 설정 (반드시 최상단에 위치해야 오류가 발생하지 않음)
+# ==========================================
+st.set_page_config(
+    page_title="용인시 건축법규 지원엔진", 
+    page_icon=None, 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+import streamlit.components.v1 as components
 import time
 from datetime import datetime
 import traceback
@@ -9,19 +20,9 @@ import base64
 import os
 import io
 import uuid
-import textwrap  # ✅ HTML 들여쓰기 제거를 위한 모듈 추가
+import textwrap
 
-# ==========================================
-# 1. 페이지 설정 (최상단 고정 - 이모티콘 제거 및 타이틀 변경)
-# ==========================================
-st.set_page_config(
-    page_title="용인시 건축법규 지원엔진", 
-    page_icon=None, 
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# 외부 모듈 임포트 (기존 로직 유지)
+# 외부 모듈 임포트
 from widget_utils import inject_floating_button
 from docx import Document
 from processor import handle_ai_analysis, generate_civil_document
@@ -86,7 +87,7 @@ def apply_premium_ui_v2(is_dark):
     [data-testid="stAppViewContainer"] { background-color: #1a1a1a !important; color: #f5f5f5 !important; }
     [data-testid="stSidebar"], [data-testid="stSidebar"] > div { background-color: #111111 !important; border-right: 1px solid #444444 !important; }
     
-    /* 채팅 입력창 크기 대폭 확장 및 테두리 시각화 강화 (다크) - 조금 더 선명하게 */
+    /* 채팅 입력창 크기 대폭 확장 및 테두리 시각화 강화 (다크) */
     div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div, .stChatInput textarea {
         background-color: #242424 !important;
         border: 2px solid #667085 !important;
@@ -118,7 +119,7 @@ def apply_premium_ui_v2(is_dark):
     [data-testid="stAppViewContainer"] { background-color: #fcfcfc !important; color: #1e293b !important; }
     [data-testid="stSidebar"], [data-testid="stSidebar"] > div { background-color: #f1f5f9 !important; border-right: 1px solid #cbd5e1 !important; }
     
-    /* 채팅 입력창 크기 대폭 확장 및 테두리 시각화 강화 (라이트) - 조금 더 선명하게 */
+    /* 채팅 입력창 크기 대폭 확장 및 테두리 시각화 강화 (라이트) */
     div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div, .stChatInput > div {
         background-color: #ffffff !important;
         border: 2px solid #94a3b8 !important;
@@ -160,12 +161,9 @@ def apply_premium_ui_v2(is_dark):
 # 튜닝된 UI 주입
 apply_premium_ui_v2(st.session_state.dark_mode)
 
-# --- [대화기록 내부 검색 팝업 창] ---
-dialog_decorator = st.dialog if hasattr(st, "dialog") else st.experimental_dialog
-
-# 이모티콘 제거
-@dialog_decorator("대화기록 검색 시스템", width="large")
-def open_history_search_dialog():
+# --- [대화기록 내부 검색 팝업 창 호환성 처리] ---
+# Streamlit 버전에 따른 오류를 완벽 차단하기 위해 분리 구현
+def _render_history_search_dialog():
     search_query = st.text_input("검색 키워드 입력", placeholder="예: 건폐율, 사선제한, 처인구...", key="dialog_history_search_input")
     query = search_query.strip().lower()
 
@@ -194,7 +192,6 @@ def open_history_search_dialog():
             preview = chat.get("messages", [])[0].get("query", "")[:60] + "..." if chat.get("messages") else ""
             
             with st.container():
-                # 이모티콘 제거
                 if st.button(f"{title[:25]}... \n\n {time_str}", key=f"dialog_chat_{idx}", use_container_width=True):
                     st.session_state.selected_index = idx
                     st.session_state.current_page = "main"
@@ -202,8 +199,17 @@ def open_history_search_dialog():
                 st.caption(f"미리보기: {preview}")
                 st.markdown("---")
 
+if hasattr(st, "dialog"):
+    @st.dialog("대화기록 검색 시스템", width="large")
+    def open_history_search_dialog():
+        _render_history_search_dialog()
+else:
+    @st.experimental_dialog("대화기록 검색 시스템")
+    def open_history_search_dialog():
+        _render_history_search_dialog()
+
 # ==========================================
-# 4. 구조화된 사이드바 시스템 (로고 삽입, 타이틀 변경, 이모티콘 제거)
+# 4. 구조화된 사이드바 시스템
 # ==========================================
 with st.sidebar:
     # 용인시 로고 삽입 및 타이틀 변경
@@ -213,7 +219,7 @@ with st.sidebar:
     st.markdown("<h2 style='text-align:center; font-weight:700; color:#4A90E2; font-size:22px; margin-top:10px;'>용인시 건축법규 지원엔진</h2>", unsafe_allow_html=True)
     st.divider()
     
-    # [인증 인프라] (이모티콘 제거)
+    # [인증 인프라]
     with st.expander("실무자 권한 인증", expanded=(st.session_state.user_id == "guest")):
         if st.session_state.user_id == "guest":
             auth_tabs = st.tabs(["로그인", "계정 생성"])
@@ -225,7 +231,6 @@ with st.sidebar:
                     if authenticate_user(login_id.strip(), login_pw.strip()):
                         st.session_state.user_id = login_id.strip()
                         st.session_state.chat_history = load_history(st.session_state.user_id)
-                        # 이모티콘 제거
                         st.toast(f"환영합니다, {st.session_state.user_id} 주무관님.")
                         st.rerun()
                     else:
@@ -238,7 +243,6 @@ with st.sidebar:
                     if check_id_exists(reg_id.strip()):
                         st.error("이미 사용 중인 식별자입니다.")
                     elif register_user(reg_id.strip(), reg_pw.strip()):
-                        # 이모티콘 제거
                         st.toast("사용자 계정이 생성되었습니다. 로그인을 시도하세요.")
         else:
             st.markdown(f"접속 세션: <span style='color:#4A90E2; font-weight:bold;'>{st.session_state.user_id}</span>", unsafe_allow_html=True)
@@ -250,7 +254,7 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # [내비게이션 모듈 - 직관성 개선] (이모티콘 제거)
+    # [내비게이션 모듈]
     st.subheader("핵심 메뉴")
     if st.button("메인 엔진 (AI 심층 질의)", use_container_width=True): st.session_state.current_page = "main"; st.rerun()
     if st.button("민원 서식 행정 자동완성", use_container_width=True): st.session_state.current_page = "doc_gen"; st.rerun()
@@ -261,7 +265,7 @@ with st.sidebar:
     st.toggle("다크 테마 적용", key="dark_mode_toggle", on_change=sync_dark_mode)
     st.divider()
     
-    # [대화 세션 히스토리 인터페이스] (이모티콘 제거)
+    # [대화 세션 히스토리 인터페이스]
     st.subheader("최근 대화 아카이브")
     c_new, c_src = st.columns(2)
     with c_new:
@@ -276,7 +280,6 @@ with st.sidebar:
     history_container = st.container(height=400, border=False)
     with history_container:
         if st.session_state.chat_history:
-            # 기존 대화에 고유 id가 없으면 한 번만 부여
             id_changed = False
             for chat in st.session_state.chat_history:
                 if "id" not in chat:
@@ -298,9 +301,7 @@ with st.sidebar:
 
             for actual_index, chat in history_items:
                 chat_id = chat["id"]
-
                 time_str = chat.get("updated_at", chat.get("created_at", "00-00 00:00"))[5:16]
-
                 title = chat.get("title", "질의 데이터")
                 is_pinned = chat.get("pinned", False)
 
@@ -310,7 +311,6 @@ with st.sidebar:
                 col_btn, col_menu = st.columns([82, 18])
 
                 with col_btn:
-                    # 이모티콘 제거
                     if st.button(
                         f"{pin_mark}{time_str} | {query_summary}",
                         key=f"hist_btn_{chat_id}",
@@ -377,7 +377,6 @@ with st.sidebar:
 # 5. 메인 앱 레이아웃 및 페이지 라우팅
 # ==========================================
 
-# --- 🏠 [화면 1] 메인 대화 엔진 --- (이모티콘 제거)
 if st.session_state.current_page == "main":
     
     st.markdown("""
@@ -394,7 +393,6 @@ if st.session_state.current_page == "main":
     with c_info2:
         st.info("**질의 표준:** 대지안의 공지 규정 관련 용인시 조례상 이격거리 예외 기준")
 
-    # 선택된 대화 표시 로직
     is_new_chat = st.session_state.selected_index is None
     show_state_panel = False
 
@@ -413,12 +411,10 @@ if st.session_state.current_page == "main":
                 st.session_state.selected_index = None
                 st.rerun()
                 
-        # 대화 내용 렌더링
         for msg in chat_data["messages"]:
             render_user_message(msg["query"])
             render_ai_report(msg["response"])
             
-    # CSS: 컨텍스트 관리 영역 경계선 삽입을 위한 HTML 앵커 추가
     col_chat, col_state = None, None
     if show_state_panel:
         col_chat, col_state = st.columns([73, 27])
@@ -460,7 +456,6 @@ if st.session_state.current_page == "main":
                     st.error(f"오류 피드백: {str(e)}")
             st.rerun()
             
-    # 컨텍스트 관리 패널 (사이드 컬럼) - 이모티콘 제거
     if show_state_panel and col_state is not None:
         with col_state:
             st.markdown("<div id='context-panel'></div>", unsafe_allow_html=True)
@@ -480,7 +475,6 @@ if st.session_state.current_page == "main":
                     save_history(st.session_state.chat_history, st.session_state.user_id)
                     st.success("시스템 적용 완료")
 
-# --- 📝 [화면 2] 서식 자동완성 --- (이모티콘 제거)
 elif st.session_state.current_page == "doc_gen":
     st.markdown("## 민원 서식 행정 자동완성 시스템")
     st.caption("AI 해석 결과를 바탕으로 행정 표준 민원서 및 신청서를 자동 빌드합니다.")
@@ -556,7 +550,6 @@ elif st.session_state.current_page == "doc_gen":
                 except Exception as e:
                     st.error(f"양식 빌드 중 오류 발생: {e}")
 
-# --- 💡 [화면 3] Q&A 게시판 --- (이모티콘 제거)
 elif st.session_state.current_page == "qna":
     st.markdown("## 실무 현장 질의응답 (Q&A)")
     st.caption("주무관 및 실무자 간의 교차 검증 및 지식 아카이브 공간입니다.")
@@ -571,7 +564,7 @@ elif st.session_state.current_page == "qna":
                 st.write(f"**질의 내용:**\n{q['content']}")
                 if q['answer']:
                     st.markdown("---")
-                    st.write(f"**✅ 답변 내용:**\n{q['answer']}")
+                    st.write(f"**답변 내용:**\n{q['answer']}")
                     
     st.divider()
     st.subheader("신규 유권해석 케이스 발행")
@@ -602,7 +595,6 @@ elif st.session_state.current_page == "qna":
                         st.session_state.qna_list[i]['status'] = "답변완료"
                         st.rerun()
 
-# --- 🗺️ [화면 4] 사이트맵 --- (이모티콘 제거)
 elif st.session_state.current_page == "sitemap":
     st.markdown("## 플랫폼 구조 및 법률 아카이브 트리")
     st.caption("플랫폼 엔진이 검사하는 데이터 구조의 설계 색인 일람입니다.")
@@ -697,7 +689,6 @@ elif st.session_state.current_page == "sitemap":
     </body>
     </html>
     """
-    # ✅ markdown 대신 html component 사용
     components.html(
         architecture_html,
         height=900,
@@ -706,10 +697,8 @@ elif st.session_state.current_page == "sitemap":
 
     st.divider()
     
-    # 조례, 법령, 조례의 차용법규(44개), 법령의 차용법규(61개) 전수 매핑 탭 구조 (이모티콘 제거)
     tabs = st.tabs(["1. 기본 조례 일람", "2. 상위 기본 법령 일람", "3. 조례의 차용 법규 (전체 44개)", "4. 법령의 차용 법규 (전체 61개)"])
     
-    # 탭 1: 조례 리스트
     with tabs[0]:
         df_ord = pd.DataFrame([
             ["경기도", "경기도 건축 조례"], ["경기도", "경기도 건축기본조례"],
@@ -720,7 +709,6 @@ elif st.session_state.current_page == "sitemap":
         ], columns=["소관", "법규명"])
         st.dataframe(df_ord, hide_index=True, use_container_width=True)
 
-    # 탭 2: 법령 리스트
     with tabs[1]:
         df_stat = pd.DataFrame([
             ["국토교통부", "건축법"], ["국토교통부", "건축법 시행령"], ["국토교통부", "건축법 시행규칙"],
@@ -729,7 +717,6 @@ elif st.session_state.current_page == "sitemap":
         ], columns=["소관부처", "법규명"])
         st.dataframe(df_stat, hide_index=True, use_container_width=True)
 
-    # 탭 3: 조례의 차용 법규 리스트 (제공해주신 44개 항목 정밀 가공 매핑)
     with tabs[2]:
         ord_borrow_data = [
             "가축분뇨의 관리 및 이용에 관한 법률", "건축법", "건축법 시행규칙", "건축법 시행령", "건축사법",
@@ -746,7 +733,6 @@ elif st.session_state.current_page == "sitemap":
         df_ord_borrow = pd.DataFrame({"연계 및 인용 조례의 차용법규명": ord_borrow_data})
         st.dataframe(df_ord_borrow, hide_index=True, use_container_width=True)
 
-    # 탭 4: 법령의 차용 법규 리스트 (제공해주신 61개 항목 정밀 가공 매핑)
     with tabs[3]:
         law_borrow_data = [
             "건설기술 진흥법", "건설산업기본법", "건축기본법", "건축법", "건축사법", 
