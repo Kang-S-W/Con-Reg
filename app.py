@@ -142,8 +142,9 @@ def apply_premium_ui_v3(is_dark):
             "table_header": "#282828",
             "table_text": "#f5f5f5",
             "table_muted": "#b8b8b8",
-            "toggle_track": "#f5f5f5",
-            "toggle_thumb": "#111111",
+            "toggle_off": "#ef4444",
+            "toggle_on": "#22c55e",
+            "toggle_thumb": "#ffffff",
             "toggle_border": "#f5f5f5",
         }
     else:
@@ -172,7 +173,8 @@ def apply_premium_ui_v3(is_dark):
             "table_header": "#f2f2f2",
             "table_text": "#111111",
             "table_muted": "#555555",
-            "toggle_track": "#111111",
+            "toggle_off": "#ef4444",
+            "toggle_on": "#22c55e",
             "toggle_thumb": "#ffffff",
             "toggle_border": "#111111",
         }
@@ -207,7 +209,8 @@ def apply_premium_ui_v3(is_dark):
         --table-header: {colors["table_header"]};
         --table-text: {colors["table_text"]};
         --table-muted: {colors["table_muted"]};
-        --toggle-track: {colors["toggle_track"]};
+        --toggle-off: {colors["toggle_off"]};
+        --toggle-on: {colors["toggle_on"]};
         --toggle-thumb: {colors["toggle_thumb"]};
         --toggle-border: {colors["toggle_border"]};
     }}
@@ -399,10 +402,22 @@ def apply_premium_ui_v3(is_dark):
         opacity: 0.85 !important;
     }}
 
+    .toggle-caption {{
+        color: var(--text) !important;
+        -webkit-text-fill-color: var(--text) !important;
+        background: transparent !important;
+        border: 0 !important;
+        outline: 0 !important;
+        box-shadow: none !important;
+        font-size: 15px;
+        font-weight: 750;
+        line-height: 1.2;
+        padding-top: 2px;
+        white-space: nowrap;
+    }}
+
     div[data-testid="stToggle"] label,
     div[data-testid="stCheckbox"] label,
-    div[data-testid="stToggle"] label div,
-    div[data-testid="stCheckbox"] label div,
     div[data-testid="stToggle"] [data-testid="stWidgetLabel"],
     div[data-testid="stCheckbox"] [data-testid="stWidgetLabel"],
     div[data-testid="stToggle"] [data-testid="stMarkdownContainer"],
@@ -438,27 +453,26 @@ def apply_premium_ui_v3(is_dark):
         gap: 0.55rem !important;
     }}
 
-    div[data-testid="stToggle"] > label > div:last-child,
-    div[data-testid="stCheckbox"] > label > div:last-child,
-    div[data-testid="stToggle"] > label > div:last-child *,
-    div[data-testid="stCheckbox"] > label > div:last-child * {{
-        color: var(--text) !important;
-        -webkit-text-fill-color: var(--text) !important;
-        background: transparent !important;
-        background-color: transparent !important;
-        border: 0 !important;
-        outline: 0 !important;
-        box-shadow: none !important;
-        border-radius: 0 !important;
+    div[data-testid="stToggle"] [data-testid="stCheckboxIndicator"],
+    div[data-testid="stCheckbox"] [data-testid="stCheckboxIndicator"] {{
+        background: var(--toggle-off) !important;
+        border: 2px solid var(--toggle-border) !important;
+        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.22) !important;
         opacity: 1 !important;
     }}
 
-    div[data-testid="stToggle"] [data-testid="stCheckboxIndicator"],
-    div[data-testid="stCheckbox"] [data-testid="stCheckboxIndicator"] {{
-        background: var(--toggle-track) !important;
+    div[data-testid="stToggle"] [role="switch"],
+    div[data-testid="stCheckbox"] [role="switch"] {{
+        background: var(--toggle-off) !important;
         border: 2px solid var(--toggle-border) !important;
-        box-shadow: 0 0 0 2px var(--surface), 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.22) !important;
         opacity: 1 !important;
+    }}
+
+    div[data-testid="stToggle"] [role="switch"][aria-checked="true"],
+    div[data-testid="stCheckbox"] [role="switch"][aria-checked="true"] {{
+        background: var(--toggle-on) !important;
+        border-color: var(--toggle-border) !important;
     }}
 
     div[data-testid="stToggle"] [data-testid="stCheckboxIndicator"]::before,
@@ -469,16 +483,30 @@ def apply_premium_ui_v3(is_dark):
 
     div[data-testid="stToggle"] input:checked + div,
     div[data-testid="stCheckbox"] input:checked + div {{
-        background: var(--toggle-track) !important;
+        background: var(--toggle-on) !important;
+        border-color: var(--toggle-border) !important;
+    }}
+
+    div[data-testid="stToggle"] input:checked ~ div [data-testid="stCheckboxIndicator"],
+    div[data-testid="stCheckbox"] input:checked ~ div [data-testid="stCheckboxIndicator"],
+    div[data-testid="stToggle"] input:checked ~ [data-testid="stCheckboxIndicator"],
+    div[data-testid="stCheckbox"] input:checked ~ [data-testid="stCheckboxIndicator"] {{
+        background: var(--toggle-on) !important;
         border-color: var(--toggle-border) !important;
     }}
 
     [data-testid="stSidebar"] input[type="checkbox"] + div,
     [data-testid="stSidebar"] input[role="switch"] + div {{
-        background: var(--toggle-track) !important;
+        background: var(--toggle-off) !important;
         border: 2px solid var(--toggle-border) !important;
-        box-shadow: 0 0 0 2px var(--surface), 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.22) !important;
         opacity: 1 !important;
+    }}
+
+    [data-testid="stSidebar"] input[type="checkbox"]:checked + div,
+    [data-testid="stSidebar"] input[role="switch"]:checked + div {{
+        background: var(--toggle-on) !important;
+        border-color: var(--toggle-border) !important;
     }}
 
     div[data-testid="stExpander"] details {{
@@ -841,7 +869,16 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.toggle("다크 모드", key="dark_mode_toggle", on_change=sync_dark_mode)
+    dark_toggle_col, dark_label_col = st.columns([0.28, 0.72])
+    with dark_toggle_col:
+        st.toggle(
+            "다크 모드",
+            key="dark_mode_toggle",
+            on_change=sync_dark_mode,
+            label_visibility="collapsed",
+        )
+    with dark_label_col:
+        st.markdown("<div class='toggle-caption'>다크 모드</div>", unsafe_allow_html=True)
     st.divider()
 
     st.subheader("최근 대화")
@@ -973,9 +1010,18 @@ if st.session_state.current_page == "main":
         current_chat = None
         current_state = {}
 
-    col_top_left, col_top_right = st.columns([4, 1])
+    col_top_left, col_top_right = st.columns([3.7, 1.3])
     with col_top_right:
-        show_state_panel = st.toggle("검토 조건 패널", value=True, key="use_state_panel")
+        panel_toggle_col, panel_label_col = st.columns([0.25, 0.75])
+        with panel_toggle_col:
+            show_state_panel = st.toggle(
+                "검토 조건 패널",
+                value=True,
+                key="use_state_panel",
+                label_visibility="collapsed",
+            )
+        with panel_label_col:
+            st.markdown("<div class='toggle-caption'>검토 조건 패널</div>", unsafe_allow_html=True)
 
     if show_state_panel:
         col_chat, col_state = st.columns([73, 27])
