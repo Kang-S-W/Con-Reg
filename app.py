@@ -1770,29 +1770,25 @@ def check_local_ordinance_updates(api_key, base_date=20260403):
             
     return updated_ordinances
 
-# 배포 시 아래 두 함수의 주석 샵 기호를 제거한다.
-# @st.cache_data(ttl=86400) 
+@st.cache_data(ttl=86400) 
 def run_daily_national_update_check(date_val):
     api_key = st.secrets["LAW_API_KEY"]
     return check_national_law_updates(api_key, base_date=date_val)
 
-# 배포 시 아래 두 함수의 주석 샵 기호를 제거한다.
-# @st.cache_data(ttl=86400) 
+@st.cache_data(ttl=86400) 
 def run_daily_ordinance_update_check(date_val):
     api_key = st.secrets["LAW_API_KEY"]
     return check_local_ordinance_updates(api_key, base_date=date_val)
 
-
-test_base_date = 20140101
 
 st.write("---")
 
 col_main, col_alert = st.columns([7, 3])
 
 with col_alert:
-    st.subheader("법규 개정 모니터링(2014년 1월 1일 기준)")
+    st.subheader("법규 개정 모니터링(2026년 4월 3일 기준)")
     
-    with st.spinner("2014년 1월 1일을 기준으로 법규 개정 여부를 확인하고 있습니다. 약 2분이 소요됩니다."):
+    with st.spinner("2014년 4월 3일을 기준으로 법규 개정 여부를 확인하고 있습니다. 약 5분이 소요됩니다."):
         updated_list = run_daily_national_update_check(test_base_date)
         updated_ordinances_list = run_daily_ordinance_update_check(test_base_date)
 
