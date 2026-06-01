@@ -1462,12 +1462,12 @@ elif st.session_state.current_page == "sitemap":
                     <div class="section-title">학습 및 참조 데이터</div>
                     <div class="grid">
                         <div class="card green">
-                            <div class="card-title">용인시 조례</div>
-                            <div class="card-desc">건축 조례, 건축물관리 조례, 도시계획 조례 등</div>
+                            <div class="card-title">용인시 조례 및 경기도 조례</div>
+                            <div class="card-desc">건축 조례, 건축물관리 조례, 도시계획 조례 및 경기도 건축 조례 등</div>
                         </div>
                         <div class="card green">
-                            <div class="card-title">경기도 조례</div>
-                            <div class="card-desc">경기도 건축 조례와 관련 자치법규</div>
+                            <div class="card-title">용인시 홈페이지 사이트맵</div>
+                            <div class="card-desc">질문에 관련된 용인시 홈페이지가 있을 경우 안내</div>
                         </div>
                         <div class="card green">
                             <div class="card-title">상위 법령</div>
