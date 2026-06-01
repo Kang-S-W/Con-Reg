@@ -183,6 +183,7 @@ def handle_ai_analysis(user_query):
     if uploaded_bytes:
         file_uri = upload_pdf_to_gemini(uploaded_bytes)
 
+    # 💡 engine.py에 새로 추가한 state_context 인자 전달
     response_text = get_gemini_response(
         user_query=final_query_with_context, 
         db_status=db_status,
@@ -192,15 +193,7 @@ def handle_ai_analysis(user_query):
         file_uri=file_uri 
     )
     
-    # 💡 engine.py에 새로 추가한 state_context 인자 전달
-    response_text = get_gemini_response(
-        user_query=final_query_with_context, 
-        db_status=db_status,
-        db_context=db_context,
-        semantic_tags=semantic_tags,
-        state_context=state_context 
-    )
-
+    
     # 6. 답변 완료 후 상태 데이터 능동 갱신
     updated_state = get_gemini_state_update(user_query, response_text, current_state)
     if updated_state and isinstance(updated_state, dict):
