@@ -1788,9 +1788,9 @@ col_main, col_alert = st.columns([7, 3])
 with col_alert:
     st.subheader("법규 개정 모니터링(2026년 4월 3일 기준)")
     
-    with st.spinner("2014년 4월 3일을 기준으로 법규 개정 여부를 확인하고 있습니다. 약 5분이 소요됩니다."):
-        updated_list = run_daily_national_update_check(test_base_date)
-        updated_ordinances_list = run_daily_ordinance_update_check(test_base_date)
+    with st.spinner("2026년 4월 3일을 기준으로 법규 개정 여부를 확인하고 있습니다. 약 4분이 소요됩니다."):
+        updated_list = run_daily_national_update_check(20260403)
+        updated_ordinances_list = run_daily_ordinance_update_check(20260403)
 
     if updated_list:
         st.error("최신 개정안 시행 국가법령")
@@ -1807,6 +1807,3 @@ with col_alert:
             st.write(f"- {ordin_name}")
     else:
         st.success("새롭게 개정된 자치법규가 없다.")
-
-with col_main:
-    st.write("메인 웹사이트 구역이다. 이 곳에 기존 메인 화면 구성 요소들이 위치해야 한다.")
