@@ -24,9 +24,6 @@ from style import apply_custom_style
 from components import render_user_message, render_ai_report
 from storage import load_history, save_history
 
-# 용인시 민원창구 연계 플로팅 버튼 활성화
-inject_floating_button()
-
 # ==========================================
 # 2. 세션 상태 관리 및 초기화
 # ==========================================
@@ -51,6 +48,17 @@ if (
 ):
     st.session_state.selected_index = None
 
+# 챗봇 메인 화면에서 실제 대화가 있을 때만 민원창구 플로팅 버튼 표시
+selected_index = st.session_state.get("selected_index")
+chat_history = st.session_state.get("chat_history", [])
+
+if (
+    st.session_state.get("current_page") == "main"
+    and selected_index is not None
+    and 0 <= selected_index < len(chat_history)
+    and chat_history[selected_index].get("messages")
+):
+    inject_floating_button()
 
 def sync_dark_mode():
     st.session_state.dark_mode = st.session_state.dark_mode_toggle
