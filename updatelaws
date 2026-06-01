@@ -130,21 +130,30 @@ def run_daily_ordinance_update_check(date_val):
 # 10년 전 과거 날짜 강제 주입
 test_base_date = 20140101
 
-st.title("📜 법규 개정 자동 모니터링 시스템")
-st.write("데이터베이스 교차 검증을 진행 중입니다...")
-# 사용자 화면 멈춤 방지용 표시창
-with st.spinner("법규 개정 여부를 확인하고 있다. 약 2분이 소요된다."):
-    updated_list = run_daily_national_update_check(test_base_date)
-    updated_ordinances_list = run_daily_ordinance_update_check(test_base_date)
+st.write("---")
+col_main, col_alert = st.columns([7, 3])
 
-if updated_list:
-    st.sidebar.error("국가법령 개정 알림")
-    st.sidebar.write("아래 법령의 최신 개정안이 시행되었다.")
-    for law_name in updated_list:
-        st.sidebar.write(f"- {law_name}")
+with col_alert:
+    st.write("법규 개정 자동 모니터링")
+    
+    with st.spinner("법규 개정 여부를 확인하고 있다. 약 2분이 소요된다."):
+        updated_list = run_daily_national_update_check(test_base_date)
+        updated_ordinances_list = run_daily_ordinance_update_check(test_base_date)
 
-if updated_ordinances_list:
-    st.sidebar.error("자치법규 개정 알림")
-    st.sidebar.write("아래 자치법규의 최신 개정안이 시행되었다.")
-    for ordin_name in updated_ordinances_list:
-        st.sidebar.write(f"- {ordin_name}")
+    st.error("모니터링 결과")
+
+    if updated_list:
+        st.write("최신 개정안 시행 국가법령")
+        for law_name in updated_list:
+            st.write(law_name)
+    else:
+        st.write("새롭게 개정된 국가법령이 없다.")
+
+    st.write(" ")
+
+    if updated_ordinances_list:
+        st.write("최신 개정안 시행 자치법규")
+        for ordin_name in updated_ordinances_list:
+            st.write(ordin_name)
+    else:
+        st.write("새롭게 개정된 자치법규가 없다.")
