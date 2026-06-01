@@ -130,6 +130,8 @@ def run_daily_ordinance_update_check(date_val):
 # 10년 전 과거 날짜 강제 주입
 test_base_date = 20140101
 
+st.title("📜 법규 개정 자동 모니터링 시스템")
+st.write("데이터베이스 교차 검증을 진행 중입니다...")
 # 사용자 화면 멈춤 방지용 표시창
 with st.spinner("법규 개정 여부를 확인하고 있다. 약 2분이 소요된다."):
     updated_list = run_daily_national_update_check(test_base_date)
