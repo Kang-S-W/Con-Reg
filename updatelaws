@@ -1,8 +1,9 @@
-def check_national_law_updates(api_key, base_date="20250108"):
-    import requests
-    import urllib.parse
-    import time
-    
+import requests
+import urllib.parse
+import time
+import streamlit as st
+
+def check_national_law_updates(api_key, base_date=20250108):
     national_laws = [
         "건축법", "건축기본법", "문화예술진흥법", "건축물관리법", "국토의 계획 및 이용에 관한 법률",
         "감정평가 및 감정평가사에 관한 법률", "건설기술 진흥법", "건축사법", "고등교육법", 
@@ -26,8 +27,8 @@ def check_national_law_updates(api_key, base_date="20250108"):
     ]
 
     updated_laws = []
-    
-    agent_string = "Mozilla_5.0 (Windows NT 10.0; Win64; x64) AppleWebKit_537.36 (KHTML, like Gecko) Chrome_120.0.0.0 Safari_537.36".replace("_", chr(47))
+    slash = chr(47)
+    agent_string = f"Mozilla_5.0 (Windows NT 10.0; Win64; x64) AppleWebKit_537.36 (KHTML, like Gecko) Chrome_120.0.0.0 Safari_537.36".replace("_", slash)
     headers = {"User-Agent": agent_string}
 
     chunk_size = 10
@@ -35,7 +36,7 @@ def check_national_law_updates(api_key, base_date="20250108"):
         chunk = national_laws[i:i + chunk_size]
         for law in chunk:
             encoded_law = urllib.parse.quote(law)
-            url = f"http:__www.law.go.kr_DRF_lawSearch.do?OC={api_key}&target=oneview&type=JSON&query={encoded_law}".replace("_", chr(47))
+            url = f"http:{slash}{slash}www.law.go.kr{slash}DRF{slash}lawSearch.do?OC={api_key}&target=oneview&type=JSON&query={encoded_law}"
             
             try:
                 res = requests.get(url, headers=headers, timeout=10)
@@ -49,7 +50,7 @@ def check_national_law_updates(api_key, base_date="20250108"):
                             law_name = law_item.get("법령명", "")
                             efyd = law_item.get("시행일자", "")
                             
-                            if efyd and int(efyd) > int(base_date):
+                            if efyd and int(efyd) > base_date:
                                 if law_name not in updated_laws:
                                     updated_laws.append(law_name)
             except Exception:
@@ -59,27 +60,7 @@ def check_national_law_updates(api_key, base_date="20250108"):
             
     return updated_laws
 
-import streamlit as st
-
-@st.cache_data(ttl=86400) 
-def run_daily_national_update_check():
-    api_key = st.secrets["LAW_API_KEY"]
-    return check_national_law_updates(api_key, base_date="20250108")
-
-updated_list = run_daily_national_update_check()
-
-if updated_list:
-    st.sidebar.error("국가법령 개정 알림")
-    st.sidebar.write("아래 법령의 최신 개정안이 시행되었다. 데이터베이스 교차 검증이 필요하다.")
-    for law_name in updated_list:
-        st.sidebar.write(f"- {law_name}")
-
-
 def check_local_ordinance_updates(api_key, base_date=20260425):
-    import requests
-    import urllib.parse
-    import time
-
     local_ordinances = [
         "경기도 건축 조례", "경기도 건축기본조례", "경기도 건축물 미술작품 설치 및 관리에 관한 조례",
         "경기도 건축물관리 조례", "용인시 건축 조례", "용인시 건축물관리 조례",
@@ -89,7 +70,6 @@ def check_local_ordinance_updates(api_key, base_date=20260425):
     ]
 
     updated_ordinances = []
-    
     slash = chr(47)
     agent_string = f"Mozilla_5.0 (Windows NT 10.0; Win64; x64) AppleWebKit_537.36 (KHTML, like Gecko) Chrome_120.0.0.0 Safari_537.36".replace("_", slash)
     headers = {"User-Agent": agent_string}
@@ -135,18 +115,34 @@ def check_local_ordinance_updates(api_key, base_date=20260425):
             
     return updated_ordinances
 
-
-import streamlit as st
-
-@st.cache_data(ttl=86400) 
-def run_daily_ordinance_update_check():
+# 테스트를 위해 임시로 캐시 해제 (배포 시 샵 기호 제거)
+# @st.cache_data(ttl=86400) 
+def run_daily_national_update_check(date_val):
     api_key = st.secrets["LAW_API_KEY"]
-    return check_local_ordinance_updates(api_key, base_date=20260425)
+    return check_national_law_updates(api_key, base_date=date_val)
 
-updated_ordinances_list = run_daily_ordinance_update_check()
+# 테스트를 위해 임시로 캐시 해제 (배포 시 샵 기호 제거)
+# @st.cache_data(ttl=86400) 
+def run_daily_ordinance_update_check(date_val):
+    api_key = st.secrets["LAW_API_KEY"]
+    return check_local_ordinance_updates(api_key, base_date=date_val)
+
+# 10년 전 과거 날짜 강제 주입
+test_base_date = 20140101
+
+# 사용자 화면 멈춤 방지용 표시창
+with st.spinner("법규 개정 여부를 확인하고 있다. 약 2분이 소요된다."):
+    updated_list = run_daily_national_update_check(test_base_date)
+    updated_ordinances_list = run_daily_ordinance_update_check(test_base_date)
+
+if updated_list:
+    st.sidebar.error("국가법령 개정 알림")
+    st.sidebar.write("아래 법령의 최신 개정안이 시행되었다.")
+    for law_name in updated_list:
+        st.sidebar.write(f"- {law_name}")
 
 if updated_ordinances_list:
     st.sidebar.error("자치법규 개정 알림")
-    st.sidebar.write("아래 자치법규의 최신 개정안이 시행되었다. 데이터베이스 교차 검증이 필요하다.")
+    st.sidebar.write("아래 자치법규의 최신 개정안이 시행되었다.")
     for ordin_name in updated_ordinances_list:
         st.sidebar.write(f"- {ordin_name}")
