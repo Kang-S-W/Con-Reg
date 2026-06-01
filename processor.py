@@ -182,6 +182,8 @@ def handle_ai_analysis(user_query):
     uploaded_bytes = st.session_state.get("uploaded_pdf_bytes", None)
     if uploaded_bytes:
         file_uri = upload_pdf_to_gemini(uploaded_bytes)
+        import time
+        time.sleep(4)
 
     # 💡 engine.py에 새로 추가한 state_context 인자 전달
     response_text = get_gemini_response(
