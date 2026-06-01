@@ -1099,26 +1099,9 @@ if st.session_state.current_page == "main":
                     "<div class='context-panel-title'>토지 및 건축정보 관리창</div>",
                     unsafe_allow_html=True,
                 )
-                st.caption("아래 저장된 토지 및 건축정보는 대화에 지속적으로 반영됩니다. 도로명주소를 입력하면 용도지역/지구 및 면적을 추출합니다.")
+                st.caption("아래 저장된 토지 및 건축정보는 대화에 지속적으로 반영됩니다.")
 
-                with st.container(border=True):
-                    search_addr = st.text_input(
-                        "대지 주소",
-                        placeholder="예: 처인구 중부대로 1199",
-                        label_visibility="collapsed",
-                    )
-                    if st.button("토지 정보 불러오기", use_container_width=True):
-                        if current_chat is not None:
-                            mock_data = {
-                                "검토지구": "일반주거지역",
-                                "제한구역": "비행안전구역",
-                                "산정대지면적": "1,250㎡",
-                            }
-                            current_chat["state"].update(mock_data)
-                            save_history(st.session_state.chat_history, st.session_state.user_id)
-                            st.rerun()
-                        else:
-                            render_notice("대화를 먼저 선택하거나 새 질의를 시작해 주세요.", "warning")
+                
 
                 if current_chat is not None:
                     if not current_state:
