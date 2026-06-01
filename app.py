@@ -1755,14 +1755,16 @@ def check_local_ordinance_updates(api_key, base_date=20260403):
                             item_list = root_block["law"]
                             
                             for ordin_item in item_list:
-                                efyd = ordin_item.get("시행일자", "")
-                                
-                                efyd_clean = "".join(filter(str.isdigit, str(efyd)))
-                                
-                                if efyd_clean and int(efyd_clean) > base_date:
-                                    if ordin not in updated_ordinances:
-                                        updated_ordinances.append(ordin)
-                                    break  
+                                # 자치법규의 진짜 이름을 가져와 공백을 제거하고 대조함
+                                ordin_name = ordin_item.get("자치법규명", "")
+                                if ordin_name.replace(" ", "") == search_keyword:
+                                    efyd = ordin_item.get("시행일자", "")
+                                    efyd_clean = "".join(filter(str.isdigit, str(efyd)))
+                                    
+                                    if efyd_clean and int(efyd_clean) > base_date:
+                                        if ordin not in updated_ordinances:
+                                            updated_ordinances.append(ordin)
+                                        break  
             except Exception:
                 continue
                 
