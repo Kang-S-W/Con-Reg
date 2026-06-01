@@ -126,7 +126,7 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags="", sta
     
     MODEL_NAME = "gemini-2.5-flash" 
     api_key = st.secrets["GEMINI_API_KEY"]
-    url = f"https:__generativelanguage.googleapis.com_v1_models_{MODEL_NAME}:generateContent?key={api_key}".replace("_", chr(47))
+    url = f"https:__generativelanguage.googleapis.com_v1beta_models_{MODEL_NAME}:generateContent?key={api_key}".replace("_", chr(47))
     headers = {'Content-Type': 'application_json'.replace("_", chr(47))}
     
     fallback_header = ""
