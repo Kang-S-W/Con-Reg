@@ -1021,7 +1021,7 @@ if st.session_state.current_page == "main":
                 label_visibility="collapsed",
             )
         with panel_label_col:
-            st.markdown("<div class='toggle-caption'>검토 조건 패널</div>", unsafe_allow_html=True)
+            st.markdown("<div class='toggle-caption'>정보 관리창 On/Off</div>", unsafe_allow_html=True)
 
     if show_state_panel:
         col_chat, col_state = st.columns([73, 27])
