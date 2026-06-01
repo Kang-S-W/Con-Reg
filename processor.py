@@ -11,7 +11,30 @@ from engine import get_semantic_keywords, get_gemini_response
 from database import get_ordinance_data
 from storage import save_history
 
+#pdf 업로드 기능 추가
+def upload_pdf_to_gemini(file_bytes):
+    import requests
+    import streamlit as st
+    
+    if not file_bytes:
+        return ""
+        
+    api_key = st.secrets["GEMINI_API_KEY"]
+    
+    upload_url = f"https:__generativelanguage.googleapis.com_upload_v1beta_files?uploadType=media&key={api_key}".replace("_", chr(47))
+    headers = {"Content-Type": "application_pdf".replace("_", chr(47))}
+    
+    try:
+        res = requests.post(upload_url, headers=headers, data=file_bytes, timeout=30)
+        if res.status_code == 200:
+            file_info = res.json().get("file", {})
+            return file_info.get("uri", "")
+    except Exception:
+        pass
+        
+    return ""
 
+# 메인 함수
 def get_gemini_state_update(query, response, current_state):
     import json
     import re
@@ -154,6 +177,21 @@ def handle_ai_analysis(user_query):
 
     final_query_with_context = context_text + "새로운 질문: " + user_query
 
+    #pdf 파일 전달하는 과정 추가
+    file_uri = ""
+    uploaded_bytes = st.session_state.get("uploaded_pdf_bytes", None)
+    if uploaded_bytes:
+        file_uri = upload_pdf_to_gemini(uploaded_bytes)
+
+    response_text = get_gemini_response(
+        user_query=final_query_with_context, 
+        db_status=db_status,
+        db_context=db_context,
+        semantic_tags=semantic_tags,
+        state_context=state_context,
+        file_uri=file_uri 
+    )
+    
     # 💡 engine.py에 새로 추가한 state_context 인자 전달
     response_text = get_gemini_response(
         user_query=final_query_with_context, 
