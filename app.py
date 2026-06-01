@@ -1085,10 +1085,10 @@ if st.session_state.current_page == "main":
         with col_state:
             with st.container(border=True):
                 st.markdown(
-                    "<div class='context-panel-title'>토지 및 건축정보 관리</div>",
+                    "<div class='context-panel-title'>토지 및 건축정보 관리창</div>",
                     unsafe_allow_html=True,
                 )
-                st.caption("도로명주소를 입력하면 경기도가 제공하는 API를 토대로 용도지역/지구 및 면적을 추출합니다.")
+                st.caption("아래 저장된 토지 및 건축정보는 대화에 지속적으로 반영됩니다. 도로명주소를 입력하면 용도지역/지구 및 면적을 추출합니다.")
 
                 with st.container(border=True):
                     search_addr = st.text_input(
