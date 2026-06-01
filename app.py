@@ -1715,7 +1715,7 @@ def check_national_law_updates(api_key, base_date=20260403):
             
     return updated_laws
 
-def check_local_ordinance_updates(api_key, base_date=20260425):
+def check_local_ordinance_updates(api_key, base_date=20260403):
     import requests
     import urllib.parse
     import time
@@ -1747,34 +1747,22 @@ def check_local_ordinance_updates(api_key, base_date=20260425):
                 if res.status_code == 200:
                     data = res.json()
                     
-                    # 1. 맹점 해결: 폴더 이름이 무엇이든 'totalCnt'가 있는 핵심 폴더를 동적으로 추적
-                    root_block = data
-                    for key, value in data.items():
-                        if isinstance(value, dict) and "totalCnt" in value:
-                            root_block = value
-                            break
+                    if "OrdinSearch" in data:
+                        root_block = data["OrdinSearch"]
+                        total_cnt = root_block.get("totalCnt", "0")
+                        
+                        if str(total_cnt) != "0" and "law" in root_block:
+                            item_list = root_block["law"]
                             
-                    total_cnt = root_block.get("totalCnt", "0")
-                    
-                    if str(total_cnt) != "0":
-                        item_list = []
-                        if "ordin" in root_block:
-                            item_list = root_block["ordin"]
-                        elif "item" in root_block:
-                            item_list = root_block["item"]
-                            
-                        # 2. 맹점 해결: 반환된 모든 버전을 순회하며 기준일자 이후의 개정안이 있는지 스캔
-                        if item_list:
                             for ordin_item in item_list:
-                                efyd = ordin_item.get("시행일자", ordin_item.get("efYd", ""))
+                                efyd = ordin_item.get("시행일자", "")
                                 
-                                # 데이터에 섞여 있을지 모를 공백이나 특수문자를 제거하고 순수 숫자만 추출
                                 efyd_clean = "".join(filter(str.isdigit, str(efyd)))
                                 
                                 if efyd_clean and int(efyd_clean) > base_date:
                                     if ordin not in updated_ordinances:
                                         updated_ordinances.append(ordin)
-                                    break  # 개정 사실을 확인했으므로 즉시 중단하고 다음 조례로 넘어감
+                                    break  
             except Exception:
                 continue
                 
