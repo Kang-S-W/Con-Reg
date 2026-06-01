@@ -117,11 +117,7 @@ def get_relevant_sitemap(user_query):
         
     return ""
 
-# 💡 [핵심 변경 1] 함수 인자에 state_context="" 추가
-def get_gemini_response(user_query, db_status, db_context, semantic_tags="", state_context=""):
-    """
-    [Step 2] 최종 답변 생성 (잠정적 답변 제공 및 단서 조항 추가 + 상태 기억소 연동)
-    """
+def get_gemini_response(user_query, db_status, db_context, semantic_tags="", state_context="", file_uri=""):
     import streamlit as st
     import requests
     import json
@@ -130,8 +126,8 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags="", sta
     
     MODEL_NAME = "gemini-2.5-flash" 
     api_key = st.secrets["GEMINI_API_KEY"]
-    url = f"https://generativelanguage.googleapis.com/v1/models/{MODEL_NAME}:generateContent?key={api_key}"
-    headers = {'Content-Type': 'application/json'}
+    url = f"https:__generativelanguage.googleapis.com_v1_models_{MODEL_NAME}:generateContent?key={api_key}".replace("_", chr(47))
+    headers = {'Content-Type': 'application_json'.replace("_", chr(47))}
     
     fallback_header = ""
     if db_status in ["INCOMPLETE", "NO_DATA"]:
@@ -157,13 +153,23 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags="", sta
     2. (잠정적 답변 제공) 사용자의 [질문]에 필수 조건이 누락되어 있더라도 절대 답변을 거부하지 않는다. 확인 가능한 원칙, 가장 일반적인 기준, 또는 조건별 경우의 수를 요약하여 우선적으로 '결론'과 '세부 해석'을 온전하게 제공한다.
     3. (안전장치 및 역질문) 답변을 제공한 후, '세부 해석'의 가장 마지막에 반드시 다음과 같은 형식의 단서 조항을 추가한다: "다만, 본 규정은 [누락된 조건]에 따라 적용 기준이 달라질 수 있다. 정확한 행정 해석을 위해 대상지의 [누락된 조건]을 추가로 제시하기 바란다."
 
-    {state_context}  # 💡 [핵심 변경 2] 프로세서에서 넘겨받은 상태 기억소 데이터를 여기에 강제 주입
+    {state_context}
 
     [참조 데이터]: {db_context}
     질문: {user_query}
     """
     
-    payload = {"contents": [{"parts": [{"text": prompt}]}]}
+    parts_list = [{"text": prompt}]
+    
+    if file_uri:
+        parts_list.append({
+            "fileData": {
+                "mimeType": "application_pdf".replace("_", chr(47)),
+                "fileUri": file_uri
+            }
+        })
+        
+    payload = {"contents": [{"parts": parts_list}]}
     
     for i in range(5):
         try:
@@ -171,7 +177,6 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags="", sta
             if res.status_code == 200:
                 text = res.json()['candidates'][0]['content']['parts'][0]['text']
                 text = re.sub(r"\[.*?\]", "", text)
-                text = text.replace("*", "").replace("/", "")
                 
                 meta_trash = ["제공된 데이터베이스", "법령 자료는", "포함하고 있지 않습니다", "확인할 수 없습니다"]
                 for trash in meta_trash:
@@ -185,4 +190,5 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags="", sta
                 return final_text + sitemap_text
             time.sleep(2)
         except: continue
+        
     return "시스템 엔진 응답 실패. 잠시 후 다시 시도해 주기 바랍니다. 100초 이내에 응답이 실패했다면 질문 내용을 분할/구체화하시기 바랍니다"
