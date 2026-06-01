@@ -1015,7 +1015,7 @@ if st.session_state.current_page == "main":
         panel_toggle_col, panel_label_col = st.columns([0.25, 0.75])
         with panel_toggle_col:
             show_state_panel = st.toggle(
-                "검토 조건 패널",
+                "정보 관리창 On/Off",
                 value=True,
                 key="use_state_panel",
                 label_visibility="collapsed",
