@@ -1658,9 +1658,6 @@ import urllib.parse
 import time
 import streamlit as st
 
-st.set_page_config(layout="wide") 
-st.title("🚨 화면 테스트: 이 글씨조차 안 보이면 파일 연동이 잘못된 것입니다.")
-
 def check_national_law_updates(api_key, base_date=20260403):
     national_laws = [
         "건축법", "건축기본법", "문화예술진흥법", "건축물관리법", "국토의 계획 및 이용에 관한 법률",
@@ -1795,7 +1792,7 @@ col_main, col_alert = st.columns([7, 3])
 with col_alert:
     st.subheader("법규 개정 모니터링")
     
-    with st.spinner("법규 개정 여부를 확인하고 있다. 약 2분이 소요된다."):
+    with st.spinner("2014년 1월 1일을 기준으로 법규 개정 여부를 확인하고 있습니다. 약 2분이 소요됩니다."):
         updated_list = run_daily_national_update_check(test_base_date)
         updated_ordinances_list = run_daily_ordinance_update_check(test_base_date)
 
