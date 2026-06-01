@@ -3,6 +3,9 @@ import urllib.parse
 import time
 import streamlit as st
 
+st.set_page_config(layout="wide") 
+st.title("🚨 화면 테스트: 이 글씨조차 안 보이면 파일 연동이 잘못된 것입니다.")
+
 def check_national_law_updates(api_key, base_date=20260403):
     national_laws = [
         "건축법", "건축기본법", "문화예술진흥법", "건축물관리법", "국토의 계획 및 이용에 관한 법률",
