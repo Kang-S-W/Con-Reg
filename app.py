@@ -1788,7 +1788,7 @@ st.write("---")
 col_main, col_alert = st.columns([7, 3])
 
 with col_alert:
-    st.subheader("법규 개정 모니터링(2026년 4월 3일 기준)")
+    st.subheader("개정된 법규 목록(2026년 4월 3일 기준)")
     
     with st.spinner("2026년 4월 3일을 기준으로 법규 개정 여부를 확인하고 있습니다. 약 4분이 소요됩니다."):
         updated_list = run_daily_national_update_check(20260403)
