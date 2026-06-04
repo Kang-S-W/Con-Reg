@@ -1017,7 +1017,7 @@ with st.sidebar:
 # ==========================================
 if st.session_state.current_page == "main":
     st.markdown("## 건축 조례 및 규제 검토")
-    st.caption("용인시 조례와 관련 법령을 함께 검토해 주요 기준, 예외 조건, 행정 검토 포인트를 정리합니다.")
+    st.caption("용인시 조례와 관련 법령을 함께 검토해 주요 기준, 예외 조건, 행정 검토 포인트를 정리합니다. 사안이 용인시 웹사이트와 관련된 경우 사이트를 연계합니다.")
     st.write("")
 
     if st.session_state.selected_index is not None:
