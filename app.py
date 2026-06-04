@@ -1799,7 +1799,7 @@ with col_alert:
         for law_name in updated_list:
             st.write(f"- {law_name}")
     else:
-        st.success("새롭게 개정된 국가법령이 없다.")
+        st.success("새롭게 개정된 국가법령이 없습니다.")
 
     st.write(" ")
 
@@ -1808,4 +1808,4 @@ with col_alert:
         for ordin_name in updated_ordinances_list:
             st.write(f"- {ordin_name}")
     else:
-        st.success("새롭게 개정된 자치법규가 없다.")
+        st.success("새롭게 개정된 자치법규가 없습니다.")
