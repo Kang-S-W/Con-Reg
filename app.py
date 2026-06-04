@@ -12,7 +12,7 @@ from docx import Document
 # 1. 페이지 설정
 # ==========================================
 st.set_page_config(
-    page_title="용인시 건축 조례 지원 플랫폼",
+    page_title="용인시 건축법규 지원엔진",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -829,9 +829,9 @@ with st.sidebar:
     )
     st.divider()
 
-    with st.expander("실무자 로그인", expanded=(st.session_state.user_id == "guest")):
+    with st.expander("로그인", expanded=(st.session_state.user_id == "guest")):
         if st.session_state.user_id == "guest":
-            auth_tabs = st.tabs(["로그인", "계정 생성"])
+            auth_tabs = st.tabs(["로그인", "회원가입"])
             with auth_tabs[0]:
                 login_id = st.text_input("아이디", key="login_id")
                 login_pw = st.text_input("암호", type="password", key="login_pw")
@@ -849,7 +849,7 @@ with st.sidebar:
             with auth_tabs[1]:
                 reg_id = st.text_input("아이디", key="reg_id")
                 reg_pw = st.text_input("암호", type="password", key="reg_pw")
-                if st.button("계정 생성", use_container_width=True):
+                if st.button("회원가입", use_container_width=True):
                     from storage import check_id_exists, register_user
 
                     cleaned_id = reg_id.strip()
@@ -859,7 +859,7 @@ with st.sidebar:
                     elif check_id_exists(cleaned_id):
                         render_notice("이미 사용 중인 아이디입니다.", "error")
                     elif register_user(cleaned_id, cleaned_pw):
-                        st.toast("계정이 생성되었습니다. 로그인해 주세요.")
+                        st.toast("회원가입이 완료되었습니다. 로그인해 주세요.")
         else:
             st.markdown(
                 f"현재 사용자: <span style='color:var(--accent-strong); font-weight:700;'>{html.escape(st.session_state.user_id)}</span>",
@@ -873,14 +873,14 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    st.subheader("주요 메뉴")
+    st.subheader("메뉴")
     if st.button("AI 법규 검토", use_container_width=True):
         st.session_state.current_page = "main"
         st.rerun()
-    if st.button("민원 서식 작성", use_container_width=True):
+    if st.button("민원 서식 생성", use_container_width=True):
         st.session_state.current_page = "doc_gen"
         st.rerun()
-    if st.button("실무 Q&A", use_container_width=True):
+    if st.button("시스템 Q&A", use_container_width=True):
         st.session_state.current_page = "qna"
         st.rerun()
     if st.button("사이트맵", use_container_width=True):
@@ -1503,7 +1503,7 @@ elif st.session_state.current_page == "sitemap":
     st.subheader("학습 법규 목록")
     st.caption("플랫폼 검토 범위에 포함된 기본 조례, 상위 법령, 차용 법규를 정리했습니다.")
 
-    tabs = st.tabs(["기본 조례", "상위 기본 법령", "조례의 차용 법규", "법령의 차용 법규"])
+    tabs = st.tabs(["조례", "상위 법령", "조례의 차용 법규", "법령의 차용 법규"])
 
     with tabs[0]:
         df_ord = pd.DataFrame(
@@ -1516,7 +1516,7 @@ elif st.session_state.current_page == "sitemap":
                 ["용인시", "용인시 건축물관리 조례"],
                 ["용인시", "용인시 도시계획 조례"],
             ],
-            columns=["소관", "조례명"],
+            columns=["지자체", "조례명"],
         )
         render_legal_table(df_ord)
 
