@@ -1107,7 +1107,7 @@ if st.session_state.current_page == "main":
                     "<div class='context-panel-title'>토지 및 건축정보 관리창</div>",
                     unsafe_allow_html=True,
                 )
-                st.caption("아래 저장된 토지 및 건축정보는 대화에 지속적으로 반영됩니다. 대화의 내용을 토대로 자동 저장됩니다.")
+                st.caption("아래 저장된 토지 및 건축정보는 대화에 지속적으로 반영됩니다. 대화의 내용을 토대로 자동 저장됩니다. 사용을 원치 않으실 경우 상단의 버튼으로 Off 하실 수 있습니다.")
 
                 
 
