@@ -1434,7 +1434,7 @@ elif st.session_state.current_page == "sitemap":
                             <div class="card-desc">입력 내용을 행정 문서 형식으로 정리하는 작성 도구</div>
                         </div>
                         <div class="card blue">
-                            <div class="card-title">실무 Q&A</div>
+                            <div class="card-title">시스템 Q&A</div>
                             <div class="card-desc">업무 중 발생한 쟁점과 답변을 축적하는 공유 공간</div>
                         </div>
                         <div class="card blue">
