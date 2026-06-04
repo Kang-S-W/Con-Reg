@@ -1049,7 +1049,7 @@ if st.session_state.current_page == "main":
         col_state = None
 
     with col_chat:
-        chat_box = st.container(height=560, border=True)
+        chat_box = st.container(border=True)
 
         user_query = st.chat_input(
             "검토할 조례, 대지 조건, 행정 쟁점을 입력하세요. 예: 용인시 자연녹지지역 내 건폐율 특례 적용 여부"
