@@ -811,7 +811,7 @@ def open_history_search_dialog():
 import streamlit as st
 
 # 사이드바에 배치할 경우 st.file_uploader 대신 st.sidebar.file_uploader 사용
-uploaded_file = st.file_uploader("별표 및 참고 문서 업로드 (PDF 전용)", type=["pdf"])
+uploaded_file = st.file_uploader("참고 문서 업로드 (PDF 전용)", type=["pdf"])
 
 # 업로드된 파일 데이터를 세션 상태에 저장하여 processor.py에서 접근 가능하도록 설정
 if uploaded_file is not None:
