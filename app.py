@@ -1236,7 +1236,7 @@ elif st.session_state.current_page == "doc_gen":
 # 8. 화면 3: 실무 Q&A
 # ==========================================
 elif st.session_state.current_page == "qna":
-    st.markdown("## 프로그램 Q&A")
+    st.markdown("## 시스템 Q&A")
     st.caption("추가 기능 또는 법규 목록 및 기타 질의사항을 남겨주시면 답변드리겠습니다.")
     st.divider()
 
