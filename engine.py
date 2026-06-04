@@ -1,3 +1,122 @@
+import streamlit as st
+import requests
+import json
+import re
+import time
+from database import load_law_links
+from database import load_sitemap_db
+
+def get_semantic_keywords(user_query):
+    """[Step 1] 질문의 법률적 의도 분석"""
+    MODEL_NAME = "gemini-2.5-flash"
+    api_key = st.secrets["GEMINI_API_KEY"]
+    url = f"https://generativelanguage.googleapis.com/v1/models/{MODEL_NAME}:generateContent?key={api_key}"
+    headers = {'Content-Type': 'application/json'}
+    analysis_prompt = f"질문: '{user_query}' \n 이 질문과 관련된 법령 명칭과 전문 용어를 콤마(,)로 구분해서 5개만 나열한다."
+    payload = {"contents": [{"parts": [{"text": analysis_prompt}]}]}
+    try:
+        response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=10)
+        return response.json()['candidates'][0]['content']['parts'][0]['text'].strip() if response.status_code == 200 else ""
+    except: return ""
+
+def apply_law_links(text):
+    link_db = load_law_links()
+    if not link_db: return text
+    
+    found_links = []
+    clean_text = re.sub(r'[\s\.\,\(\)\[\]]', '', text)
+    sorted_law_names = sorted(link_db.keys(), key=len, reverse=True)
+    
+    for law_name in sorted_law_names:
+        law_name_no_space = law_name.replace(" ", "")
+        if law_name_no_space in clean_text:
+            url = link_db[law_name].strip()
+            
+            if not url.startswith(('http://', 'https://')):
+                url = 'https://' + url
+            
+            link_entry = f"- [{law_name}]|||{url}|||"
+            if link_entry not in found_links:
+                found_links.append(link_entry)
+    
+    if found_links:
+        link_section = "\n\n---\n\n### 관련 법령 원문 링크\n\n" + "\n".join(found_links)
+        return text + link_section
+    return text
+
+def get_relevant_sitemap(user_query):
+    """
+    용인시청 사이트맵 DB에서 사용자의 질문과 가장 관련성이 높은 메뉴를 독립적으로 추론합니다.
+    """
+    df = load_sitemap_db()
+    if df is None or df.empty:
+        return ""
+        
+    sitemap_context = []
+    for idx, row in df.iterrows():
+        sitemap_context.append({
+            "index": idx,
+            "menu": row['menu (메뉴명)'],
+            "function": row['function (기능)']
+        })
+    
+    MODEL_NAME = "gemini-2.5-flash"
+    api_key = st.secrets["GEMINI_API_KEY"]
+    url = f"https://generativelanguage.googleapis.com/v1/models/{MODEL_NAME}:generateContent?key={api_key}"
+    headers = {'Content-Type': 'application/json'}
+    
+    prompt = f"""
+당신은 용인시청 행정 시스템 안내 전문가다.
+다음은 용인시청 홈페이지의 건축 민원 관련 행정 사이트맵 데이터다:
+
+{json.dumps(sitemap_context, ensure_ascii=False, indent=2)}
+
+[사용자 민원 질문]:
+"{user_query}"
+
+위 사용자 질문의 의도와 행정 목적을 분석하여, 민원을 해결하기 위해 접속해야 하는 가장 밀접한 행정 웹페이지를 최대 2개 선택한다.
+만약 질문과 연관된 행정 메뉴가 전혀 없다면 빈 리스트 []를 반환한다.
+
+반드시 아래 JSON 형식으로만 답변하고 어떠한 서론이나 추가 설명도 포함하지 않는다:
+[
+  {{"index": 선택한_메뉴의_index, "reason": "선택한 행정적 이유"}}
+]
+"""
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
+    
+    try:
+        response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=15)
+        if response.status_code == 200:
+            result_text = response.json()['candidates'][0]['content']['parts'][0]['text'].strip()
+            
+            if "```json" in result_text:
+                result_text = result_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in result_text:
+                result_text = result_text.split("```")[1].split("```")[0].strip()
+                
+            selected_items = json.loads(result_text)
+            found_links = []
+            
+            for item in selected_items:
+                idx = int(item["index"])
+                if 0 <= idx < len(df):
+                    menu_path = df.iloc[idx]['menu (메뉴명)'].strip()
+                    menu_name = menu_path.split(">")[-1].strip() 
+                    link = df.iloc[idx]['link (링크)'].strip()
+                    
+                    if not link.startswith(('http://', 'https://')):
+                        link = 'https://' + link
+                        
+                    found_links.append(f"- **{menu_name} 안내 웹페이지 바로가기**: [{menu_path}]|||{link}|||")
+            
+            if found_links:
+                return "\n\n---\n\n### 용인시청 홈페이지 행정 서비스 연계\n" + "\n".join(found_links)
+    except Exception as e:
+        st.error(f"사이트맵 내부 추론 오류 발생: {e}")
+        return ""
+        
+    return ""
+
 def get_gemini_response(user_query, db_status, db_context, semantic_tags="", state_context="", file_uri=""):
     import streamlit as st
     import requests
@@ -76,4 +195,4 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags="", sta
             time.sleep(2)
         except: continue
         
-    return "시스템 엔진 응답 실패. 잠시 후 다시 시도해 주기 바랍니다. 100초 이내에 응답이 실패했다면 질문 내용을 분할 또는 구체화하시기 바랍니다."
+    return "시스템 엔진 응답 실패. 잠시 후 다시 시도해 주시기 바랍니다. 100초 이내에 응답이 실패했다면 질문 내용을 분할/구체화하시기 바랍니다."
