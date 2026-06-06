@@ -1482,7 +1482,7 @@ elif st.session_state.current_page == "sitemap":
                             <div class="card-desc">건축법, 건축기본법, 국토계획법 및 하위 법령</div>
                         </div>
                         <div class="card green">
-                            <div class="card-title">차용 법규</div>
+                            <div class="card-title">관련 법규</div>
                             <div class="card-desc">조례와 법령에서 준용하거나 인용하는 관련 법규</div>
                         </div>
                     </div>
@@ -1501,9 +1501,9 @@ elif st.session_state.current_page == "sitemap":
 
     st.divider()
     st.subheader("학습 법규 목록")
-    st.caption("플랫폼 검토 범위에 포함된 기본 조례, 상위 법령, 차용 법규를 정리했습니다.")
+    st.caption("플랫폼 검토 범위에 포함된 기본 조례, 상위 법령, 관련 법규를 정리했습니다.")
 
-    tabs = st.tabs(["조례", "상위 법령", "조례의 차용 법규", "법령의 차용 법규"])
+    tabs = st.tabs(["조례", "상위 법령", "조례의 관련 법규", "법령의 관련 법규"])
 
     with tabs[0]:
         df_ord = pd.DataFrame(
